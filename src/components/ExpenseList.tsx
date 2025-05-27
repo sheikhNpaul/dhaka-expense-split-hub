@@ -1,10 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { formatDistanceToNow } from 'date-fns';
+import { Edit, MessageCircle } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -17,7 +18,13 @@ interface Expense {
   payer_id: string;
 }
 
-export const ExpenseList = () => {
+interface ExpenseListProps {
+  refreshTrigger?: number;
+  onEditExpense: (expense: Expense) => void;
+  onViewComments: (expenseId: string) => void;
+}
+
+export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: ExpenseListProps) => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profiles, setProfiles] = useState<Record<string, any>>({});
@@ -28,6 +35,30 @@ export const ExpenseList = () => {
       fetchExpenses();
       fetchProfiles();
     }
+  }, [user, refreshTrigger]);
+
+  // Real-time subscription for new expenses
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('expenses-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'expenses'
+        },
+        () => {
+          fetchExpenses();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchExpenses = async () => {
@@ -131,7 +162,7 @@ export const ExpenseList = () => {
               </Badge>
             </div>
 
-            <div className="flex justify-between items-center text-sm text-gray-500">
+            <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
               <div>
                 Paid by: <span className="font-medium">
                   {profiles[expense.payer_id]?.name || profiles[expense.payer_id]?.email || 'Unknown'}
@@ -142,7 +173,7 @@ export const ExpenseList = () => {
               </div>
             </div>
 
-            <div className="mt-2 text-sm">
+            <div className="mb-3 text-sm">
               <span className="text-gray-600">Participants: </span>
               {expense.participants.map((participantId, index) => (
                 <span key={participantId} className="font-medium">
@@ -150,6 +181,29 @@ export const ExpenseList = () => {
                   {index < expense.participants.length - 1 ? ', ' : ''}
                 </span>
               ))}
+            </div>
+
+            <div className="flex gap-2">
+              {expense.payer_id === user?.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEditExpense(expense)}
+                  className="flex items-center gap-1"
+                >
+                  <Edit className="h-3 w-3" />
+                  Edit
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewComments(expense.id)}
+                className="flex items-center gap-1"
+              >
+                <MessageCircle className="h-3 w-3" />
+                Comments
+              </Button>
             </div>
           </CardContent>
         </Card>

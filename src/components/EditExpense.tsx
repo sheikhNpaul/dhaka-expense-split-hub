@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,24 +10,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { X } from 'lucide-react';
 
-interface AddExpenseProps {
-  onClose: () => void;
-  onExpenseAdded: () => void;
+interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  description: string;
+  split_type: string;
+  participants: string[];
 }
 
-export const AddExpense = ({ onClose, onExpenseAdded }: AddExpenseProps) => {
-  
+interface EditExpenseProps {
+  expense: Expense;
+  onClose: () => void;
+  onExpenseUpdated: () => void;
+}
+
+export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
-    title: '',
-    amount: '',
-    description: '',
-    splitType: 'all_three' as 'all_three' | 'two_people' | 'one_person',
-    selectedParticipants: [] as string[],
+    title: expense.title,
+    amount: expense.amount.toString(),
+    description: expense.description,
+    splitType: expense.split_type as 'all_three' | 'two_people' | 'one_person',
+    selectedParticipants: expense.participants,
   });
 
   useEffect(() => {
@@ -40,13 +50,6 @@ export const AddExpense = ({ onClose, onExpenseAdded }: AddExpenseProps) => {
     
     if (data) {
       setAllUsers(data);
-      // Pre-select all users for 'all_three' option
-      if (formData.splitType === 'all_three') {
-        setFormData(prev => ({
-          ...prev,
-          selectedParticipants: data.map(u => u.id)
-        }));
-      }
     }
   };
 
@@ -58,7 +61,7 @@ export const AddExpense = ({ onClose, onExpenseAdded }: AddExpenseProps) => {
         ? allUsers.map(u => u.id)
         : splitType === 'one_person' 
         ? [user?.id || '']
-        : []
+        : prev.selectedParticipants.filter(id => allUsers.find(u => u.id === id))
     }));
   };
 
@@ -79,23 +82,53 @@ export const AddExpense = ({ onClose, onExpenseAdded }: AddExpenseProps) => {
     try {
       const { error } = await supabase
         .from('expenses')
-        .insert({
+        .update({
           title: formData.title,
           amount: parseFloat(formData.amount),
           description: formData.description,
-          payer_id: user.id,
           split_type: formData.splitType,
           participants: formData.selectedParticipants,
-        });
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', expense.id);
 
       if (error) throw error;
 
       toast({
         title: "Success!",
-        description: "Expense added successfully.",
+        description: "Expense updated successfully.",
       });
       
-      onExpenseAdded();
+      onExpenseUpdated();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this expense?')) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expense.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Expense deleted successfully.",
+      });
+      
+      onExpenseUpdated();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -109,9 +142,9 @@ export const AddExpense = ({ onClose, onExpenseAdded }: AddExpenseProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Add New Expense</CardTitle>
+          <CardTitle>Edit Expense</CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -204,8 +237,17 @@ export const AddExpense = ({ onClose, onExpenseAdded }: AddExpenseProps) => {
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Cancel
               </Button>
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={handleDelete} 
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? 'Deleting...' : 'Delete'}
+              </Button>
               <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? 'Adding...' : 'Add Expense'}
+                {loading ? 'Updating...' : 'Update'}
               </Button>
             </div>
           </form>
