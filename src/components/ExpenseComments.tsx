@@ -57,15 +57,21 @@ export const ExpenseComments = ({ expenseId, onClose }: ExpenseCommentsProps) =>
   }, [expenseId]);
 
   const fetchComments = async () => {
-    const { data, error } = await supabase
-      .rpc('get_expense_comments', { p_expense_id: expenseId });
+    try {
+      const { data, error } = await supabase.rpc('get_expense_comments' as any, { 
+        p_expense_id: expenseId 
+      });
 
-    if (data) {
-      setComments(data as Comment[]);
-    }
-    
-    if (error) {
-      console.error('Error fetching comments:', error);
+      if (error) {
+        console.error('Error fetching comments:', error);
+        return;
+      }
+
+      if (data) {
+        setComments(data as Comment[]);
+      }
+    } catch (error) {
+      console.error('Error in fetchComments:', error);
     }
   };
 
@@ -89,12 +95,11 @@ export const ExpenseComments = ({ expenseId, onClose }: ExpenseCommentsProps) =>
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .rpc('insert_expense_comment', {
-          p_content: newComment.trim(),
-          p_user_id: user.id,
-          p_expense_id: expenseId,
-        });
+      const { error } = await supabase.rpc('insert_expense_comment' as any, {
+        p_content: newComment.trim(),
+        p_user_id: user.id,
+        p_expense_id: expenseId,
+      });
 
       if (error) throw error;
 

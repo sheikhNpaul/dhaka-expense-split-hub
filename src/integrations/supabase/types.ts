@@ -103,7 +103,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_expense_comments: {
+        Args: { p_expense_id: string }
+        Returns: {
+          id: string
+          content: string
+          user_id: string
+          expense_id: string
+          created_at: string
+        }[]
+      }
+      insert_expense_comment: {
+        Args: { p_content: string; p_user_id: string; p_expense_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
