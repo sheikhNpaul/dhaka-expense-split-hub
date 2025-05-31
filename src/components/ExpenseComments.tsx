@@ -58,13 +58,14 @@ export const ExpenseComments = ({ expenseId, onClose }: ExpenseCommentsProps) =>
 
   const fetchComments = async () => {
     const { data, error } = await supabase
-      .from('expense_comments')
-      .select('*')
-      .eq('expense_id', expenseId)
-      .order('created_at', { ascending: true });
+      .rpc('get_expense_comments', { p_expense_id: expenseId });
 
     if (data) {
-      setComments(data);
+      setComments(data as Comment[]);
+    }
+    
+    if (error) {
+      console.error('Error fetching comments:', error);
     }
   };
 
@@ -89,11 +90,10 @@ export const ExpenseComments = ({ expenseId, onClose }: ExpenseCommentsProps) =>
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('expense_comments')
-        .insert({
-          content: newComment.trim(),
-          user_id: user.id,
-          expense_id: expenseId,
+        .rpc('insert_expense_comment', {
+          p_content: newComment.trim(),
+          p_user_id: user.id,
+          p_expense_id: expenseId,
         });
 
       if (error) throw error;
