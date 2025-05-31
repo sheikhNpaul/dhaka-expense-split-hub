@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { ForgotPassword } from './ForgotPassword';
 
 export const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,7 @@ export const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const { toast } = useToast();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -27,6 +29,7 @@ export const Auth = () => {
           options: {
             data: {
               name: name,
+              username: username,
             },
           },
         });
@@ -36,11 +39,36 @@ export const Auth = () => {
           description: "Check your email for the confirmation link.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Try to sign in with email first
+        let signInError = null;
+        
+        const { error: emailError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
+        
+        signInError = emailError;
+        
+        // If email signin fails and the input doesn't contain @, try username
+        if (emailError && !email.includes('@')) {
+          // Find user by username in profiles table
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('username', email)
+            .maybeSingle();
+          
+          if (!profileError && profile?.email) {
+            const { error: usernameError } = await supabase.auth.signInWithPassword({
+              email: profile.email,
+              password,
+            });
+            signInError = usernameError;
+          }
+        }
+        
+        if (signInError) throw signInError;
+        
         toast({
           title: "Welcome back!",
           description: "You have been signed in successfully.",
@@ -83,13 +111,29 @@ export const Auth = () => {
                 />
               </div>
             )}
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Choose a unique username"
+                  required
+                />
+              </div>
+            )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">
+                {isSignUp ? 'Email' : 'Email or Username'}
+              </Label>
               <Input
                 id="email"
-                type="email"
+                type={isSignUp ? "email" : "text"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder={isSignUp ? "Enter your email" : "Enter your email or username"}
                 required
               />
             </div>
@@ -107,6 +151,13 @@ export const Auth = () => {
               {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
             </Button>
           </form>
+          
+          {!isSignUp && (
+            <div className="mt-4 text-center">
+              <ForgotPassword />
+            </div>
+          )}
+          
           <div className="mt-4 text-center">
             <button
               type="button"

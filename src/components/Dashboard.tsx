@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,6 +9,7 @@ import { ExpenseList } from './ExpenseList';
 import { EditExpense } from './EditExpense';
 import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
+import { UserProfile } from './UserProfile';
 import { LogOut, Plus } from 'lucide-react';
 
 interface Expense {
@@ -67,6 +67,10 @@ export const Dashboard = () => {
     setViewingComments(expenseId);
   };
 
+  const handleProfileUpdate = () => {
+    fetchProfile();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -86,6 +90,7 @@ export const Dashboard = () => {
                 <Plus className="h-4 w-4" />
                 Add Expense
               </Button>
+              <UserProfile profile={profile} onProfileUpdate={handleProfileUpdate} />
               <Button
                 variant="outline"
                 onClick={signOut}
