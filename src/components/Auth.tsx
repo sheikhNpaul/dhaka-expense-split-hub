@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -51,19 +50,24 @@ export const Auth = () => {
         
         // If email signin fails and the input doesn't contain @, try username
         if (emailError && !email.includes('@')) {
-          // Find user by username in profiles table
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('username', email)
-            .maybeSingle();
-          
-          if (!profileError && profile?.email) {
-            const { error: usernameError } = await supabase.auth.signInWithPassword({
-              email: profile.email,
-              password,
-            });
-            signInError = usernameError;
+          try {
+            // Find user by username in profiles table
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('username', email)
+              .single();
+            
+            if (!profileError && profileData?.email) {
+              const { error: usernameError } = await supabase.auth.signInWithPassword({
+                email: profileData.email,
+                password,
+              });
+              signInError = usernameError;
+            }
+          } catch (profileQueryError) {
+            // Keep the original email error if profile query fails
+            signInError = emailError;
           }
         }
         
