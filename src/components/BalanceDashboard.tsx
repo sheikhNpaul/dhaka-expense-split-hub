@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User } from 'lucide-react';
 
 interface Balance {
   userId: string;
@@ -27,6 +29,7 @@ interface Profile {
   id: string;
   name: string;
   email: string;
+  avatar_url?: string;
 }
 
 export const BalanceDashboard = () => {
@@ -72,7 +75,7 @@ export const BalanceDashboard = () => {
       // Fetch all expenses and profiles in parallel
       const [expensesResult, profilesResult] = await Promise.all([
         supabase.from('expenses').select('*'),
-        supabase.from('profiles').select('id, name, email')
+        supabase.from('profiles').select('id, name, email, avatar_url')
       ]);
 
       if (expensesResult.error) {
@@ -130,7 +133,10 @@ export const BalanceDashboard = () => {
       // Process each expense to calculate who owes whom
       expenses.forEach(expense => {
         const { payer_id, participants, amount } = expense;
-        const splitAmount = amount / participants.length;
+        const participantCount = participants.length;
+        
+        // Calculate split amount based on number of participants
+        const splitAmount = amount / participantCount;
 
         participants.forEach(participantId => {
           if (participantId !== payer_id) {
@@ -156,7 +162,7 @@ export const BalanceDashboard = () => {
         balance.netBalance = totalOwed - totalOwes;
       });
 
-      // Simplify mutual debts (if A owes B $10 and B owes A $6, then A owes B $4)
+      // Simplify mutual debts
       Object.keys(userBalances).forEach(userId1 => {
         Object.keys(userBalances).forEach(userId2 => {
           if (userId1 !== userId2) {
@@ -167,19 +173,16 @@ export const BalanceDashboard = () => {
               const netDebt = user1OwesUser2 - user2OwesUser1;
               
               if (netDebt > 0) {
-                // User1 still owes User2
                 userBalances[userId1].owes[userId2] = netDebt;
                 delete userBalances[userId2].owes[userId1];
                 userBalances[userId2].isOwed[userId1] = netDebt;
                 delete userBalances[userId1].isOwed[userId2];
               } else if (netDebt < 0) {
-                // User2 owes User1
                 userBalances[userId2].owes[userId1] = Math.abs(netDebt);
                 delete userBalances[userId1].owes[userId2];
                 userBalances[userId1].isOwed[userId2] = Math.abs(netDebt);
                 delete userBalances[userId2].isOwed[userId1];
               } else {
-                // They're even
                 delete userBalances[userId1].owes[userId2];
                 delete userBalances[userId2].owes[userId1];
                 delete userBalances[userId1].isOwed[userId2];
@@ -210,12 +213,21 @@ export const BalanceDashboard = () => {
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Calculating balances...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Calculating balances...</p>
         </div>
       </div>
     );
@@ -224,56 +236,98 @@ export const BalanceDashboard = () => {
   if (balances.length === 0) {
     return (
       <div className="text-center p-8">
-        <p className="text-gray-500">No expenses found. Add some expenses to see balance calculations.</p>
+        <p className="text-muted-foreground">No expenses found. Add some expenses to see balance calculations.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">Balance Summary</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          Balance Summary
+        </h2>
+        <div className="text-sm text-muted-foreground">
+          {balances.length} participant{balances.length > 1 ? 's' : ''}
+        </div>
+      </div>
       
-      {balances.map(balance => (
-        <Card key={balance.userId}>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{balance.userName}</span>
-              <Badge variant={balance.netBalance >= 0 ? "default" : "destructive"}>
-                {balance.netBalance >= 0 ? `+৳${balance.netBalance.toFixed(2)}` : `-৳${Math.abs(balance.netBalance).toFixed(2)}`}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Object.keys(balance.owes).length > 0 && (
-              <div className="mb-3">
-                <h4 className="font-medium text-red-600 mb-2">Owes:</h4>
-                {Object.entries(balance.owes).map(([userId, amount]) => (
-                  <div key={userId} className="flex justify-between text-sm">
-                    <span>{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
-                    <span className="text-red-600">৳{amount.toFixed(2)}</span>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {balances.map(balance => (
+          <Card key={balance.userId} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                    <AvatarImage src={profiles[balance.userId]?.avatar_url} alt={balance.userName} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                      {balance.userName ? getInitials(balance.userName) : <User className="h-5 w-5" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium text-sm md:text-base truncate">{balance.userName}</span>
+                </div>
+                <Badge variant={balance.netBalance >= 0 ? "default" : "destructive"} className="ml-2">
+                  {balance.netBalance >= 0 ? `+৳${balance.netBalance.toFixed(2)}` : `-৳${Math.abs(balance.netBalance).toFixed(2)}`}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {Object.keys(balance.owes).length > 0 && (
+                <div className="mb-3">
+                  <h4 className="font-medium text-destructive mb-2 text-sm">Owes:</h4>
+                  <div className="space-y-1">
+                    {Object.entries(balance.owes).map(([userId, amount]) => (
+                      <div key={userId} className="flex justify-between text-sm bg-destructive/5 rounded-lg p-2">
+                        <span className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={profiles[userId]?.avatar_url} />
+                            <AvatarFallback className="text-xs">
+                              {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
+                        </span>
+                        <span className="text-destructive font-medium">৳{amount.toFixed(2)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-            
-            {Object.keys(balance.isOwed).length > 0 && (
-              <div>
-                <h4 className="font-medium text-green-600 mb-2">Is owed:</h4>
-                {Object.entries(balance.isOwed).map(([userId, amount]) => (
-                  <div key={userId} className="flex justify-between text-sm">
-                    <span>{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
-                    <span className="text-green-600">৳{amount.toFixed(2)}</span>
+                </div>
+              )}
+              
+              {Object.keys(balance.isOwed).length > 0 && (
+                <div>
+                  <h4 className="font-medium text-green-600 mb-2 text-sm">Is owed:</h4>
+                  <div className="space-y-1">
+                    {Object.entries(balance.isOwed).map(([userId, amount]) => (
+                      <div key={userId} className="flex justify-between text-sm bg-green-50 dark:bg-green-950/20 rounded-lg p-2">
+                        <span className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={profiles[userId]?.avatar_url} />
+                            <AvatarFallback className="text-xs">
+                              {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="truncate">{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
+                        </span>
+                        <span className="text-green-600 font-medium">৳{amount.toFixed(2)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-            
-            {Object.keys(balance.owes).length === 0 && Object.keys(balance.isOwed).length === 0 && (
-              <p className="text-gray-500 text-sm">No outstanding balances</p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+                </div>
+              )}
+              
+              {Object.keys(balance.owes).length === 0 && Object.keys(balance.isOwed).length === 0 && (
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-950/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-green-600 text-lg">✓</span>
+                  </div>
+                  <p className="text-muted-foreground text-sm">All settled up!</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

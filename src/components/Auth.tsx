@@ -91,47 +91,51 @@ export const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{isSignUp ? 'Sign Up' : 'Sign In'}</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur">
+        <CardHeader className="text-center pb-6">
+          <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          </CardTitle>
+          <CardDescription className="text-base">
             {isSignUp 
-              ? 'Create an account to start tracking expenses with your roommates'
+              ? 'Join your roommates and start tracking expenses together'
               : 'Sign in to your expense tracker account'
             }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
+          <form onSubmit={handleAuth} className="space-y-5">
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
                 <Input
                   id="name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="transition-all focus:ring-2 focus:ring-primary/20"
                   required
                 />
               </div>
             )}
             {isSignUp && (
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username" className="text-sm font-medium">Username</Label>
                 <Input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a unique username"
+                  className="transition-all focus:ring-2 focus:ring-primary/20"
                   required
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">
-                {isSignUp ? 'Email' : 'Email or Username'}
+              <Label htmlFor="email" className="text-sm font-medium">
+                {isSignUp ? 'Email Address' : 'Email or Username'}
               </Label>
               <Input
                 id="email"
@@ -139,35 +143,41 @@ export const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={isSignUp ? "Enter your email" : "Enter your email or username"}
+                className="transition-all focus:ring-2 focus:ring-primary/20"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="transition-all focus:ring-2 focus:ring-primary/20"
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl" 
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
             </Button>
           </form>
           
           {!isSignUp && (
-            <div className="mt-4 text-center">
+            <div className="mt-6 text-center">
               <ForgotPassword />
             </div>
           )}
           
-          <div className="mt-4 text-center">
+          <div className="mt-6 text-center">
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-blue-600 hover:underline"
+              className="text-sm text-primary hover:text-primary/80 transition-colors hover:underline"
             >
               {isSignUp 
                 ? 'Already have an account? Sign in'

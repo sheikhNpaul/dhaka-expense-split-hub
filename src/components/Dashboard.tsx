@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +11,7 @@ import { EditExpense } from './EditExpense';
 import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
-import { LogOut, Plus } from 'lucide-react';
+import { LogOut, Plus, Receipt, TrendingUp } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -72,49 +73,73 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Expense Tracker</h1>
-              <p className="text-sm text-gray-600">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      {/* Modern Header */}
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16 md:h-20">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">
+                Expense Tracker
+              </h1>
+              <p className="text-sm text-muted-foreground truncate">
                 Welcome back, {profile?.name || user?.email}!
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            
+            <div className="flex items-center space-x-2 md:space-x-4">
               <Button
                 onClick={() => setShowAddExpense(true)}
-                className="flex items-center gap-2"
+                size="sm"
+                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Add Expense
+                <span className="hidden sm:inline">Add Expense</span>
               </Button>
+              
               <UserProfile profile={profile} onProfileUpdate={handleProfileUpdate} />
+              
               <Button
                 variant="outline"
                 onClick={signOut}
-                className="flex items-center gap-2"
+                size="sm"
+                className="hover:bg-destructive hover:text-destructive-foreground transition-all flex items-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                <span className="hidden md:inline">Sign Out</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         <Tabs defaultValue="expenses" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="expenses">Recent Expenses</TabsTrigger>
-            <TabsTrigger value="balances">Balance Dashboard</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
+            <TabsTrigger 
+              value="expenses" 
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
+            >
+              <Receipt className="h-4 w-4" />
+              <span className="hidden sm:inline">Recent</span> Expenses
+            </TabsTrigger>
+            <TabsTrigger 
+              value="balances"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Balance</span> Dashboard
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="expenses">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Expenses</CardTitle>
+          <TabsContent value="expenses" className="space-y-6">
+            <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                  <Receipt className="h-5 w-5 text-primary" />
+                  Recent Expenses
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ExpenseList 
@@ -126,12 +151,13 @@ export const Dashboard = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="balances">
+          <TabsContent value="balances" className="space-y-6">
             <BalanceDashboard />
           </TabsContent>
         </Tabs>
       </main>
 
+      {/* Modals */}
       {showAddExpense && (
         <AddExpense
           onClose={() => setShowAddExpense(false)}

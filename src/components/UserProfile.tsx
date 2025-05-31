@@ -6,9 +6,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { User, Settings } from 'lucide-react';
+import { User, Settings, Upload } from 'lucide-react';
 
 interface UserProfileProps {
   profile: any;
@@ -20,10 +20,11 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     name: profile?.name || '',
+    username: profile?.username || '',
     email: user?.email || '',
-    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
@@ -33,11 +34,15 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
     setLoading(true);
 
     try {
-      // Update name in profiles table
-      if (formData.name !== profile?.name) {
+      // Update profile in profiles table
+      const updates: any = {};
+      if (formData.name !== profile?.name) updates.name = formData.name;
+      if (formData.username !== profile?.username) updates.username = formData.username;
+
+      if (Object.keys(updates).length > 0) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ name: formData.name })
+          .update(updates)
           .eq('id', user?.id);
         
         if (profileError) throw profileError;
@@ -77,7 +82,7 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
       
       onProfileUpdate();
       setIsOpen(false);
-      setFormData({ ...formData, currentPassword: '', newPassword: '', confirmPassword: '' });
+      setFormData({ ...formData, newPassword: '', confirmPassword: '' });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -86,6 +91,50 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Update profile with avatar URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Avatar updated",
+        description: "Your profile picture has been updated successfully.",
+      });
+
+      onProfileUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -101,10 +150,10 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src="" alt={profile?.name || 'User'} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:scale-105 transition-transform">
+          <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+            <AvatarImage src={profile?.avatar_url} alt={profile?.name || 'User'} />
+            <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
               {profile?.name ? getInitials(profile.name) : <User className="h-5 w-5" />}
             </AvatarFallback>
           </Avatar>
@@ -116,64 +165,101 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
             <Settings className="h-5 w-5" />
             Profile Settings
           </DialogTitle>
+          <DialogDescription>
+            Update your profile information and preferences
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleUpdateProfile} className="space-y-4">
-          <div className="flex justify-center mb-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src="" alt={profile?.name || 'User'} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                {profile?.name ? getInitials(profile.name) : <User className="h-8 w-8" />}
-              </AvatarFallback>
-            </Avatar>
+        <form onSubmit={handleUpdateProfile} className="space-y-6">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <Avatar className="h-24 w-24 ring-4 ring-primary/20">
+                <AvatarImage src={profile?.avatar_url} alt={profile?.name || 'User'} />
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-2xl">
+                  {profile?.name ? getInitials(profile.name) : <User className="h-10 w-10" />}
+                </AvatarFallback>
+              </Avatar>
+              <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 cursor-pointer transition-colors">
+                <Upload className="h-4 w-4" />
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploadingAvatar}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            {uploadingAvatar && (
+              <div className="text-sm text-muted-foreground">Uploading...</div>
+            )}
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">New Password (optional)</Label>
-            <Input
-              id="newPassword"
-              type="password"
-              value={formData.newPassword}
-              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-              placeholder="Leave blank to keep current password"
-            />
-          </div>
-          
-          {formData.newPassword && (
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="name">Display Name</Label>
               <Input
-                id="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                id="name"
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
-          )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                placeholder="Choose a unique username"
+                className="transition-all focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+                className="transition-all focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password (optional)</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={formData.newPassword}
+                onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                placeholder="Leave blank to keep current password"
+                className="transition-all focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            
+            {formData.newPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  required
+                  className="transition-all focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            )}
+          </div>
           
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all" disabled={loading || uploadingAvatar}>
             {loading ? 'Updating...' : 'Update Profile'}
           </Button>
         </form>
