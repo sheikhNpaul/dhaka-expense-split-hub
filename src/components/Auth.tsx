@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -56,7 +57,7 @@ export const Auth = () => {
               .from('profiles')
               .select('email')
               .eq('username', email)
-              .single();
+              .maybeSingle();
             
             if (!profileError && profileData?.email) {
               const { error: usernameError } = await supabase.auth.signInWithPassword({
