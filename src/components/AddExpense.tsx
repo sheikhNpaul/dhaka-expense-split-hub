@@ -11,14 +11,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { X, Users } from 'lucide-react';
 
+interface Profile {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface HomeMember {
   id: string;
   user_id: string;
-  profiles: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  profile: Profile;
 }
 
 interface AddExpenseProps {
@@ -47,29 +49,53 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpens
   }, [currentHomeId]);
 
   const fetchHomeMembers = async () => {
-    const { data, error } = await supabase
-      .from('home_members')
-      .select(`
-        id,
-        user_id,
-        profiles!inner (
-          id,
-          name,
-          email
-        )
-      `)
-      .eq('home_id', currentHomeId)
-      .eq('is_active', true);
-    
-    if (data) {
-      setHomeMembers(data);
-      // Pre-select current user
-      if (user) {
-        setFormData(prev => ({
-          ...prev,
-          selectedParticipants: [user.id]
-        }));
+    try {
+      // Get home members
+      const { data: membersData, error: membersError } = await supabase
+        .from('home_members')
+        .select('id, user_id')
+        .eq('home_id', currentHomeId)
+        .eq('is_active', true);
+
+      if (membersError) throw membersError;
+
+      if (membersData && membersData.length > 0) {
+        // Get profiles for these users
+        const userIds = membersData.map(member => member.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Combine the data
+        const combinedData = membersData.map(member => {
+          const profile = profilesData?.find(p => p.id === member.user_id);
+          return {
+            id: member.id,
+            user_id: member.user_id,
+            profile: profile || { id: member.user_id, name: 'Unknown', email: '' }
+          };
+        });
+
+        setHomeMembers(combinedData);
+        
+        // Pre-select current user
+        if (user) {
+          setFormData(prev => ({
+            ...prev,
+            selectedParticipants: [user.id]
+          }));
+        }
       }
+    } catch (error) {
+      console.error('Error fetching home members:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load home members",
+        variant: "destructive",
+      });
     }
   };
 
@@ -191,7 +217,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpens
                       htmlFor={member.user_id} 
                       className="flex-1 cursor-pointer"
                     >
-                      {member.profiles.name || member.profiles.email}
+                      {member.profile.name || member.profile.email}
                       {member.user_id === user?.id && " (You)"}
                     </Label>
                   </div>
