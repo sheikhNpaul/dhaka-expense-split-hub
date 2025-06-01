@@ -32,7 +32,11 @@ interface Profile {
   avatar_url?: string;
 }
 
-export const BalanceDashboard = () => {
+interface BalanceDashboardProps {
+  currentHomeId: string;
+}
+
+export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -40,7 +44,7 @@ export const BalanceDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && currentHomeId) {
       fetchBalances();
       
       // Set up real-time subscription for expenses changes
@@ -64,17 +68,17 @@ export const BalanceDashboard = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, currentHomeId]);
 
   const fetchBalances = async () => {
-    if (!user) return;
+    if (!user || !currentHomeId) return;
 
     try {
       setLoading(true);
 
-      // Fetch all expenses and profiles in parallel
+      // Fetch expenses for this home and profiles in parallel
       const [expensesResult, profilesResult] = await Promise.all([
-        supabase.from('expenses').select('*'),
+        supabase.from('expenses').select('*').eq('home_id', currentHomeId),
         supabase.from('profiles').select('id, name, email, avatar_url')
       ]);
 
@@ -235,99 +239,104 @@ export const BalanceDashboard = () => {
 
   if (balances.length === 0) {
     return (
-      <div className="text-center p-8">
-        <p className="text-muted-foreground">No expenses found. Add some expenses to see balance calculations.</p>
-      </div>
+      <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
+        <CardContent className="text-center p-8">
+          <p className="text-muted-foreground">No expenses found for this home. Add some expenses to see balance calculations.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Balance Summary
-        </h2>
-        <div className="text-sm text-muted-foreground">
-          {balances.length} participant{balances.length > 1 ? 's' : ''}
+    <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
+      <CardHeader>
+        <div className="flex items-center justify-between mb-6">
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            Balance Summary
+          </CardTitle>
+          <div className="text-sm text-muted-foreground">
+            {balances.length} participant{balances.length > 1 ? 's' : ''}
+          </div>
         </div>
-      </div>
-      
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {balances.map(balance => (
-          <Card key={balance.userId} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                    <AvatarImage src={profiles[balance.userId]?.avatar_url} alt={balance.userName} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                      {balance.userName ? getInitials(balance.userName) : <User className="h-5 w-5" />}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium text-sm md:text-base truncate">{balance.userName}</span>
-                </div>
-                <Badge variant={balance.netBalance >= 0 ? "default" : "destructive"} className="ml-2">
-                  {balance.netBalance >= 0 ? `+৳${balance.netBalance.toFixed(2)}` : `-৳${Math.abs(balance.netBalance).toFixed(2)}`}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {Object.keys(balance.owes).length > 0 && (
-                <div className="mb-3">
-                  <h4 className="font-medium text-destructive mb-2 text-sm">Owes:</h4>
-                  <div className="space-y-1">
-                    {Object.entries(balance.owes).map(([userId, amount]) => (
-                      <div key={userId} className="flex justify-between text-sm bg-destructive/5 rounded-lg p-2">
-                        <span className="flex items-center gap-2">
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={profiles[userId]?.avatar_url} />
-                            <AvatarFallback className="text-xs">
-                              {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="truncate">{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
-                        </span>
-                        <span className="text-destructive font-medium">৳{amount.toFixed(2)}</span>
-                      </div>
-                    ))}
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {balances.map(balance => (
+            <Card key={balance.userId} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-background/80 backdrop-blur">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                      <AvatarImage src={profiles[balance.userId]?.avatar_url} alt={balance.userName} />
+                      <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
+                        {balance.userName ? getInitials(balance.userName) : <User className="h-5 w-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-medium text-sm md:text-base truncate">{balance.userName}</span>
                   </div>
-                </div>
-              )}
-              
-              {Object.keys(balance.isOwed).length > 0 && (
-                <div>
-                  <h4 className="font-medium text-green-600 mb-2 text-sm">Is owed:</h4>
-                  <div className="space-y-1">
-                    {Object.entries(balance.isOwed).map(([userId, amount]) => (
-                      <div key={userId} className="flex justify-between text-sm bg-green-50 dark:bg-green-950/20 rounded-lg p-2">
-                        <span className="flex items-center gap-2">
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={profiles[userId]?.avatar_url} />
-                            <AvatarFallback className="text-xs">
-                              {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="truncate">{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
-                        </span>
-                        <span className="text-green-600 font-medium">৳{amount.toFixed(2)}</span>
-                      </div>
-                    ))}
+                  <Badge variant={balance.netBalance >= 0 ? "default" : "destructive"} className="ml-2">
+                    {balance.netBalance >= 0 ? `+৳${balance.netBalance.toFixed(2)}` : `-৳${Math.abs(balance.netBalance).toFixed(2)}`}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {Object.keys(balance.owes).length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="font-medium text-destructive mb-2 text-sm">Owes:</h4>
+                    <div className="space-y-1">
+                      {Object.entries(balance.owes).map(([userId, amount]) => (
+                        <div key={userId} className="flex justify-between text-sm bg-destructive/5 rounded-lg p-2">
+                          <span className="flex items-center gap-2">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={profiles[userId]?.avatar_url} />
+                              <AvatarFallback className="text-xs">
+                                {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
+                          </span>
+                          <span className="text-destructive font-medium">৳{amount.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {Object.keys(balance.owes).length === 0 && Object.keys(balance.isOwed).length === 0 && (
-                <div className="text-center py-4">
-                  <div className="w-12 h-12 bg-green-100 dark:bg-green-950/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-green-600 text-lg">✓</span>
+                )}
+                
+                {Object.keys(balance.isOwed).length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-green-600 mb-2 text-sm">Is owed:</h4>
+                    <div className="space-y-1">
+                      {Object.entries(balance.isOwed).map(([userId, amount]) => (
+                        <div key={userId} className="flex justify-between text-sm bg-green-50 dark:bg-green-950/20 rounded-lg p-2">
+                          <span className="flex items-center gap-2">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={profiles[userId]?.avatar_url} />
+                              <AvatarFallback className="text-xs">
+                                {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="truncate">{profiles[userId]?.name || profiles[userId]?.email || 'Unknown User'}</span>
+                          </span>
+                          <span className="text-green-600 font-medium">৳{amount.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-muted-foreground text-sm">All settled up!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+                )}
+                
+                {Object.keys(balance.owes).length === 0 && Object.keys(balance.isOwed).length === 0 && (
+                  <div className="text-center py-4">
+                    <div className="w-12 h-12 bg-green-100 dark:bg-green-950/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <span className="text-green-600 text-lg">✓</span>
+                    </div>
+                    <p className="text-muted-foreground text-sm">All settled up!</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

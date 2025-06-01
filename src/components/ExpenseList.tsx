@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
-import { Edit, MessageCircle, User, Clock, Users } from 'lucide-react';
+import { Edit, MessageCircle, Clock, Users } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -17,6 +18,7 @@ interface Expense {
   participants: string[];
   created_at: string;
   payer_id: string;
+  home_id: string;
 }
 
 interface Profile {
@@ -30,24 +32,25 @@ interface ExpenseListProps {
   refreshTrigger?: number;
   onEditExpense: (expense: Expense) => void;
   onViewComments: (expenseId: string) => void;
+  currentHomeId: string;
 }
 
-export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: ExpenseListProps) => {
+export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, currentHomeId }: ExpenseListProps) => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && currentHomeId) {
       fetchExpenses();
       fetchProfiles();
     }
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, currentHomeId]);
 
   // Real-time subscription for new expenses
   useEffect(() => {
-    if (!user) return;
+    if (!user || !currentHomeId) return;
 
     const channel = supabase
       .channel('expenses-changes')
@@ -67,14 +70,15 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: E
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, currentHomeId]);
 
   const fetchExpenses = async () => {
-    if (!user) return;
+    if (!user || !currentHomeId) return;
 
     const { data, error } = await supabase
       .from('expenses')
       .select('*')
+      .eq('home_id', currentHomeId)
       .order('created_at', { ascending: false });
 
     if (data) {
@@ -97,29 +101,27 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: E
     }
   };
 
-  const getSplitTypeLabel = (splitType: string) => {
-    switch (splitType) {
-      case 'all_three':
-        return 'All 3 roommates';
-      case 'two_people':
-        return '2 people';
-      case 'one_person':
+  const getSplitTypeLabel = (participantCount: number) => {
+    switch (participantCount) {
+      case 1:
         return 'Personal';
+      case 2:
+        return '2 people';
+      case 3:
+        return '3 people';
       default:
-        return splitType;
+        return `${participantCount} people`;
     }
   };
 
-  const getSplitTypeColor = (splitType: string) => {
-    switch (splitType) {
-      case 'all_three':
-        return 'bg-green-100 text-green-800 dark:bg-green-950/20 dark:text-green-400';
-      case 'two_people':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-950/20 dark:text-blue-400';
-      case 'one_person':
+  const getSplitTypeColor = (participantCount: number) => {
+    switch (participantCount) {
+      case 1:
         return 'bg-purple-100 text-purple-800 dark:bg-purple-950/20 dark:text-purple-400';
+      case 2:
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-950/20 dark:text-blue-400';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-950/20 dark:text-gray-400';
+        return 'bg-green-100 text-green-800 dark:bg-green-950/20 dark:text-green-400';
     }
   };
 
@@ -154,7 +156,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: E
           <Users className="h-8 w-8 text-muted-foreground" />
         </div>
         <h3 className="text-lg font-medium mb-2">No expenses yet</h3>
-        <p className="text-muted-foreground mb-4">Start tracking expenses with your roommates</p>
+        <p className="text-muted-foreground mb-4">Start tracking expenses with your home members</p>
       </div>
     );
   }
@@ -184,8 +186,8 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: E
             
             {/* Badges */}
             <div className="flex flex-wrap gap-2 mb-4">
-              <Badge className={getSplitTypeColor(expense.split_type)}>
-                {getSplitTypeLabel(expense.split_type)}
+              <Badge className={getSplitTypeColor(expense.participants.length)}>
+                {getSplitTypeLabel(expense.participants.length)}
               </Badge>
               <Badge variant="outline" className="flex items-center gap-1">
                 <Users className="h-3 w-3" />

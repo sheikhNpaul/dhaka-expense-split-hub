@@ -11,7 +11,8 @@ import { EditExpense } from './EditExpense';
 import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
-import { LogOut, Plus, Receipt, TrendingUp } from 'lucide-react';
+import { HomeManager } from './HomeManager';
+import { LogOut, Plus, Receipt, TrendingUp, Home } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -20,6 +21,7 @@ interface Expense {
   description: string;
   split_type: string;
   participants: string[];
+  home_id: string;
 }
 
 export const Dashboard = () => {
@@ -28,6 +30,7 @@ export const Dashboard = () => {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
@@ -47,6 +50,7 @@ export const Dashboard = () => {
 
     if (data) {
       setProfile(data);
+      setCurrentHomeId(data.current_home_id);
     }
   };
 
@@ -72,6 +76,11 @@ export const Dashboard = () => {
     fetchProfile();
   };
 
+  const handleHomeSelected = (homeId: string) => {
+    setCurrentHomeId(homeId);
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Modern Header */}
@@ -88,14 +97,16 @@ export const Dashboard = () => {
             </div>
             
             <div className="flex items-center space-x-2 md:space-x-4">
-              <Button
-                onClick={() => setShowAddExpense(true)}
-                size="sm"
-                className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Expense</span>
-              </Button>
+              {currentHomeId && (
+                <Button
+                  onClick={() => setShowAddExpense(true)}
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Add Expense</span>
+                </Button>
+              )}
               
               <UserProfile profile={profile} onProfileUpdate={handleProfileUpdate} />
               
@@ -115,53 +126,97 @@ export const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        <Tabs defaultValue="expenses" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
+        <Tabs defaultValue="homes" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger 
-              value="expenses" 
+              value="homes" 
               className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
             >
+              <Home className="h-4 w-4" />
+              <span className="hidden sm:inline">Homes</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="expenses" 
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
+              disabled={!currentHomeId}
+            >
               <Receipt className="h-4 w-4" />
-              <span className="hidden sm:inline">Recent</span> Expenses
+              <span className="hidden sm:inline">Expenses</span>
             </TabsTrigger>
             <TabsTrigger 
               value="balances"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
+              disabled={!currentHomeId}
             >
               <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Balance</span> Dashboard
+              <span className="hidden sm:inline">Balances</span>
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="expenses" className="space-y-6">
+          <TabsContent value="homes" className="space-y-6">
             <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
-              <CardHeader className="pb-4">
+              <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                  <Receipt className="h-5 w-5 text-primary" />
-                  Recent Expenses
+                  <Home className="h-5 w-5 text-primary" />
+                  Home Management
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ExpenseList 
-                  refreshTrigger={refreshTrigger}
-                  onEditExpense={handleEditExpense}
-                  onViewComments={handleViewComments}
+                <HomeManager 
+                  onHomeSelected={handleHomeSelected}
+                  currentHomeId={currentHomeId || undefined}
                 />
               </CardContent>
             </Card>
           </TabsContent>
           
+          <TabsContent value="expenses" className="space-y-6">
+            {currentHomeId ? (
+              <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                    <Receipt className="h-5 w-5 text-primary" />
+                    Recent Expenses
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ExpenseList 
+                    refreshTrigger={refreshTrigger}
+                    onEditExpense={handleEditExpense}
+                    onViewComments={handleViewComments}
+                    currentHomeId={currentHomeId}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">Please select a home first to view expenses</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
           <TabsContent value="balances" className="space-y-6">
-            <BalanceDashboard />
+            {currentHomeId ? (
+              <BalanceDashboard currentHomeId={currentHomeId} />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">Please select a home first to view balances</p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
 
       {/* Modals */}
-      {showAddExpense && (
+      {showAddExpense && currentHomeId && (
         <AddExpense
           onClose={() => setShowAddExpense(false)}
           onExpenseAdded={handleExpenseAdded}
+          currentHomeId={currentHomeId}
         />
       )}
 

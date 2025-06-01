@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { X } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 
 interface Expense {
   id: string;
@@ -17,6 +18,17 @@ interface Expense {
   description: string;
   split_type: string;
   participants: string[];
+  home_id: string;
+}
+
+interface HomeMember {
+  id: string;
+  user_id: string;
+  profiles: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 interface EditExpenseProps {
@@ -29,40 +41,39 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [homeMembers, setHomeMembers] = useState<HomeMember[]>([]);
   
   const [formData, setFormData] = useState({
     title: expense.title,
     amount: expense.amount.toString(),
     description: expense.description,
-    splitType: expense.split_type as 'all_three' | 'two_people' | 'one_person',
     selectedParticipants: expense.participants,
   });
 
   useEffect(() => {
-    fetchAllUsers();
-  }, []);
+    if (expense.home_id) {
+      fetchHomeMembers();
+    }
+  }, [expense.home_id]);
 
-  const fetchAllUsers = async () => {
+  const fetchHomeMembers = async () => {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, name, email');
+      .from('home_members')
+      .select(`
+        id,
+        user_id,
+        profiles (
+          id,
+          name,
+          email
+        )
+      `)
+      .eq('home_id', expense.home_id)
+      .eq('is_active', true);
     
     if (data) {
-      setAllUsers(data);
+      setHomeMembers(data);
     }
-  };
-
-  const handleSplitTypeChange = (splitType: typeof formData.splitType) => {
-    setFormData(prev => ({
-      ...prev,
-      splitType,
-      selectedParticipants: splitType === 'all_three' 
-        ? allUsers.map(u => u.id)
-        : splitType === 'one_person' 
-        ? [user?.id || '']
-        : prev.selectedParticipants.filter(id => allUsers.find(u => u.id === id))
-    }));
   };
 
   const handleParticipantToggle = (userId: string) => {
@@ -78,6 +89,15 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
     e.preventDefault();
     if (!user) return;
 
+    if (formData.selectedParticipants.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one participant",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -86,8 +106,9 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
           title: formData.title,
           amount: parseFloat(formData.amount),
           description: formData.description,
-          split_type: formData.splitType,
           participants: formData.selectedParticipants,
+          split_type: formData.selectedParticipants.length === 1 ? 'one_person' : 
+                     formData.selectedParticipants.length === 2 ? 'two_people' : 'all_three',
           updated_at: new Date().toISOString(),
         })
         .eq('id', expense.id);
@@ -157,7 +178,7 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="e.g., Kitchen oil, Groceries"
+                placeholder="e.g., Groceries, Utilities"
                 required
               />
             </div>
@@ -186,52 +207,32 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
             </div>
 
             <div className="space-y-3">
-              <Label>Split Type</Label>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    checked={formData.splitType === 'all_three'}
-                    onChange={() => handleSplitTypeChange('all_three')}
-                  />
-                  <span>Split between all 3 roommates</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    checked={formData.splitType === 'two_people'}
-                    onChange={() => handleSplitTypeChange('two_people')}
-                  />
-                  <span>Split between 2 people</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    checked={formData.splitType === 'one_person'}
-                    onChange={() => handleSplitTypeChange('one_person')}
-                  />
-                  <span>Personal expense (bill one person)</span>
-                </label>
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Split with home members
+              </Label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {homeMembers.map(member => (
+                  <div key={member.user_id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={member.user_id}
+                      checked={formData.selectedParticipants.includes(member.user_id)}
+                      onCheckedChange={() => handleParticipantToggle(member.user_id)}
+                    />
+                    <Label 
+                      htmlFor={member.user_id} 
+                      className="flex-1 cursor-pointer"
+                    >
+                      {member.profiles.name || member.profiles.email}
+                      {member.user_id === user?.id && " (You)"}
+                    </Label>
+                  </div>
+                ))}
               </div>
+              <p className="text-sm text-muted-foreground">
+                Selected: {formData.selectedParticipants.length} member{formData.selectedParticipants.length !== 1 ? 's' : ''}
+              </p>
             </div>
-
-            {(formData.splitType === 'two_people' || formData.splitType === 'one_person') && (
-              <div className="space-y-2">
-                <Label>Select Participants</Label>
-                <div className="space-y-2">
-                  {allUsers.map(user => (
-                    <label key={user.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={formData.selectedParticipants.includes(user.id)}
-                        onChange={() => handleParticipantToggle(user.id)}
-                      />
-                      <span>{user.name || user.email}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="flex space-x-2">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">

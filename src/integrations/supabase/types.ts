@@ -46,6 +46,7 @@ export type Database = {
           amount: number
           created_at: string
           description: string | null
+          home_id: string | null
           id: string
           participants: string[]
           payer_id: string
@@ -57,6 +58,7 @@ export type Database = {
           amount: number
           created_at?: string
           description?: string | null
+          home_id?: string | null
           id?: string
           participants: string[]
           payer_id: string
@@ -68,11 +70,82 @@ export type Database = {
           amount?: number
           created_at?: string
           description?: string | null
+          home_id?: string | null
           id?: string
           participants?: string[]
           payer_id?: string
           split_type?: string
           title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_members: {
+        Row: {
+          home_id: string
+          id: string
+          is_active: boolean
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          home_id: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          home_id?: string
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_members_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homes: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string
+          home_code: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by: string
+          home_code: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string
+          home_code?: string
+          id?: string
+          name?: string
           updated_at?: string
         }
         Relationships: []
@@ -81,6 +154,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_home_id: string | null
           email: string | null
           id: string
           name: string
@@ -89,6 +163,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_home_id?: string | null
           email?: string | null
           id: string
           name: string
@@ -97,18 +172,31 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_home_id?: string | null
           email?: string | null
           id?: string
           name?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_home_id_fkey"
+            columns: ["current_home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_home_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_expense_comments: {
         Args: { p_expense_id: string }
         Returns: {
