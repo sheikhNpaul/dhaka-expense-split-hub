@@ -52,7 +52,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpens
       .select(`
         id,
         user_id,
-        profiles (
+        profiles!inner (
           id,
           name,
           email

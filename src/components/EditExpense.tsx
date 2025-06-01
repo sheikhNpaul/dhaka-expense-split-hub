@@ -62,7 +62,7 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
       .select(`
         id,
         user_id,
-        profiles (
+        profiles!inner (
           id,
           name,
           email
