@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,24 +49,30 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpens
 
   const fetchHomeMembers = async () => {
     try {
-      // Get home members
+      // First get home members
       const { data: membersData, error: membersError } = await supabase
         .from('home_members')
         .select('id, user_id')
         .eq('home_id', currentHomeId)
         .eq('is_active', true);
 
-      if (membersError) throw membersError;
+      if (membersError) {
+        console.error('Error fetching home members:', membersError);
+        throw membersError;
+      }
 
       if (membersData && membersData.length > 0) {
-        // Get profiles for these users
+        // Then get profiles for these users
         const userIds = membersData.map(member => member.user_id);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, name, email')
           .in('id', userIds);
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
+        }
 
         // Combine the data
         const combinedData = membersData.map(member => {
@@ -89,11 +94,11 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpens
           }));
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching home members:', error);
       toast({
         title: "Error",
-        description: "Failed to load home members",
+        description: error.message,
         variant: "destructive",
       });
     }

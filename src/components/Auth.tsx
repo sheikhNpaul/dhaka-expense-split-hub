@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ForgotPassword } from './ForgotPassword';
-import { isEmailInUse } from '@/lib/auth';
+import { isEmailInUse, isValidEmail, isValidPassword } from '@/lib/auth';
 
 export const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -23,13 +23,24 @@ export const Auth = () => {
 
     try {
       if (isSignUp) {
+        // Validate email format
+        if (!isValidEmail(email)) {
+          throw new Error('Please enter a valid email address.');
+        }
+
+        // Validate password strength
+        if (!isValidPassword(password)) {
+          throw new Error('Password must be at least 6 characters long.');
+        }
+
         // Check if email is already in use
         const emailExists = await isEmailInUse(email);
         if (emailExists) {
           throw new Error('This email is already registered. Please use a different email or sign in.');
         }
 
-        const { error } = await supabase.auth.signUp({
+        // Create user profile
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -39,42 +50,54 @@ export const Auth = () => {
             },
           },
         });
-        if (error) throw error;
+
+        if (signUpError) throw signUpError;
+
+        // Create profile record
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: (await supabase.auth.getUser()).data.user?.id,
+              name: name,
+              username: username,
+              email: email,
+            },
+          ]);
+
+        if (profileError) throw profileError;
+
         toast({
           title: "Success!",
           description: "Check your email for the confirmation link.",
         });
       } else {
-        // Try to sign in with email first
+        // Sign in logic
         let signInError = null;
         
-        const { error: emailError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        signInError = emailError;
-        
-        // If email signin fails and the input doesn't contain @, try username
-        if (emailError && !email.includes('@')) {
-          try {
-            // Find user by username in profiles table
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('username', email)
-              .maybeSingle();
-            
-            if (!profileError && profileData?.email) {
-              const { error: usernameError } = await supabase.auth.signInWithPassword({
-                email: profileData.email,
-                password,
-              });
-              signInError = usernameError;
-            }
-          } catch (profileQueryError) {
-            // Keep the original email error if profile query fails
-            signInError = emailError;
+        if (email.includes('@')) {
+          // Try email sign in
+          const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          signInError = error;
+        } else {
+          // Try username sign in
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('username', email)
+            .maybeSingle();
+          
+          if (!profileError && profileData?.email) {
+            const { error } = await supabase.auth.signInWithPassword({
+              email: profileData.email,
+              password,
+            });
+            signInError = error;
+          } else {
+            signInError = new Error('Invalid username or password');
           }
         }
         

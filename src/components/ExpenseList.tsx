@@ -1,13 +1,13 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { formatDistanceToNow } from 'date-fns';
-import { Edit, MessageCircle, Clock, Users } from 'lucide-react';
+import { formatDistanceToNow, startOfMonth, endOfMonth, format, startOfDay, endOfDay, isSameDay } from 'date-fns';
+import { Edit, MessageCircle, Clock, Users, Calendar } from 'lucide-react';
+import { ExpenseCalendar } from './ExpenseCalendar';
 
 interface Expense {
   id: string;
@@ -33,13 +33,19 @@ interface ExpenseListProps {
   onEditExpense: (expense: Expense) => void;
   onViewComments: (expenseId: string) => void;
   currentHomeId: string;
+  selectedMonth: Date;
+  onMonthChange: (date: Date) => void;
 }
 
-export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, currentHomeId }: ExpenseListProps) => {
+export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, currentHomeId, selectedMonth, onMonthChange }: ExpenseListProps) => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [monthlyTotal, setMonthlyTotal] = useState(0);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
     if (user && currentHomeId) {
@@ -47,6 +53,20 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
       fetchProfiles();
     }
   }, [user, refreshTrigger, currentHomeId]);
+
+  // Filter expenses when date changes
+  useEffect(() => {
+    if (selectedDate && allExpenses.length > 0) {
+      const filtered = allExpenses.filter(expense => 
+        isSameDay(new Date(expense.created_at), selectedDate)
+      );
+      setExpenses(filtered);
+      setMonthlyTotal(filtered.reduce((sum, expense) => sum + expense.amount, 0));
+    } else {
+      setExpenses(allExpenses);
+      setMonthlyTotal(allExpenses.reduce((sum, expense) => sum + expense.amount, 0));
+    }
+  }, [selectedDate, allExpenses]);
 
   // Real-time subscription for new expenses
   useEffect(() => {
@@ -75,16 +95,31 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
   const fetchExpenses = async () => {
     if (!user || !currentHomeId) return;
 
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .eq('home_id', currentHomeId)
-      .order('created_at', { ascending: false });
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('home_id', currentHomeId)
+        .order('created_at', { ascending: false });
 
-    if (data) {
-      setExpenses(data);
+      if (error) throw error;
+
+      if (data) {
+        setAllExpenses(data);
+        // Initial filtering
+        const filtered = selectedDate
+          ? data.filter(expense => isSameDay(new Date(expense.created_at), selectedDate))
+          : data;
+        setExpenses(filtered);
+        setMonthlyTotal(filtered.reduce((sum, expense) => sum + expense.amount, 0));
+      }
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchProfiles = async () => {
@@ -138,131 +173,148 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
       .slice(0, 2);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading expenses...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (expenses.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-          <Users className="h-8 w-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-medium mb-2">No expenses yet</h3>
-        <p className="text-muted-foreground mb-4">Start tracking expenses with your home members</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {expenses.map((expense) => (
-        <Card key={expense.id} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-r from-card to-card/80 backdrop-blur">
-          <CardContent className="p-4 md:p-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg truncate">{expense.title}</h3>
-                {expense.description && (
-                  <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{expense.description}</p>
-                )}
-              </div>
-              <div className="text-right sm:text-right shrink-0">
-                <p className="text-2xl font-bold text-green-600">
-                  ৳{expense.amount.toFixed(2)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  ৳{getAmountPerPerson(expense.amount, expense.participants.length)} per person
-                </p>
-              </div>
-            </div>
-            
-            {/* Badges */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              <Badge className={getSplitTypeColor(expense.participants.length)}>
-                {getSplitTypeLabel(expense.participants.length)}
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {expense.participants.length} participant{expense.participants.length > 1 ? 's' : ''}
-              </Badge>
-            </div>
+    <div className="space-y-6">
+      {/* Month selector and summary */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/30 rounded-lg p-4">
+        <div className="w-full sm:w-auto">
+          <ExpenseCalendar
+            date={selectedDate}
+            onDateChange={setSelectedDate}
+            expenses={allExpenses}
+            className="w-full sm:w-auto"
+          />
+        </div>
+        <div className="text-center sm:text-right">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            {selectedDate ? 'Daily' : 'All'} Total: ৳{monthlyTotal.toFixed(2)}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {selectedDate ? format(selectedDate, 'dd MMMM yyyy') : 'All transactions'}
+          </p>
+        </div>
+      </div>
 
-            {/* Payer and Time */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <span>Paid by:</span>
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={profiles[expense.payer_id]?.avatar_url} />
-                    <AvatarFallback className="text-xs">
-                      {profiles[expense.payer_id]?.name ? getInitials(profiles[expense.payer_id].name) : '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">
-                    {profiles[expense.payer_id]?.name || profiles[expense.payer_id]?.email || 'Unknown'}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
-              </div>
-            </div>
-
-            {/* Participants */}
-            <div className="mb-4">
-              <span className="text-sm text-muted-foreground mb-2 block">Participants:</span>
-              <div className="flex flex-wrap gap-2">
-                {expense.participants.map((participantId) => (
-                  <div key={participantId} className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={profiles[participantId]?.avatar_url} />
-                      <AvatarFallback className="text-xs">
-                        {profiles[participantId]?.name ? getInitials(profiles[participantId].name) : '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">
-                      {profiles[participantId]?.name || profiles[participantId]?.email || 'Unknown'}
-                    </span>
+      {/* Expenses list */}
+      {loading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading expenses...</p>
+          </div>
+        </div>
+      ) : expenses.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">No expenses for {format(selectedDate, 'MMMM yyyy')}</h3>
+          <p className="text-muted-foreground mb-4">Add some expenses to start tracking</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {expenses.map((expense) => (
+            <Card key={expense.id} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-r from-card to-card/80 backdrop-blur">
+              <CardContent className="p-4 md:p-6">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-lg truncate">{expense.title}</h3>
+                    {expense.description && (
+                      <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{expense.description}</p>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="text-right sm:text-right shrink-0">
+                    <p className="text-2xl font-bold text-green-600">
+                      ৳{expense.amount.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      ৳{getAmountPerPerson(expense.amount, expense.participants.length)} per person
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <Badge className={getSplitTypeColor(expense.participants.length)}>
+                    {getSplitTypeLabel(expense.participants.length)}
+                  </Badge>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {expense.participants.length} participant{expense.participants.length > 1 ? 's' : ''}
+                  </Badge>
+                </div>
 
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2">
-              {expense.payer_id === user?.id && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onEditExpense(expense)}
-                  className="flex items-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
-                >
-                  <Edit className="h-3 w-3" />
-                  Edit
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewComments(expense.id)}
-                className="flex items-center gap-1 hover:bg-secondary transition-colors"
-              >
-                <MessageCircle className="h-3 w-3" />
-                Comments
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                {/* Payer and Time */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span>Paid by:</span>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={profiles[expense.payer_id]?.avatar_url} />
+                        <AvatarFallback className="text-xs">
+                          {profiles[expense.payer_id]?.name ? getInitials(profiles[expense.payer_id].name) : '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">
+                        {profiles[expense.payer_id]?.name || profiles[expense.payer_id]?.email || 'Unknown'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
+                  </div>
+                </div>
+
+                {/* Participants */}
+                <div className="mb-4">
+                  <span className="text-sm text-muted-foreground mb-2 block">Participants:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {expense.participants.map((participantId) => (
+                      <div key={participantId} className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={profiles[participantId]?.avatar_url} />
+                          <AvatarFallback className="text-xs">
+                            {profiles[participantId]?.name ? getInitials(profiles[participantId].name) : '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">
+                          {profiles[participantId]?.name || profiles[participantId]?.email || 'Unknown'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2">
+                  {expense.payer_id === user?.id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEditExpense(expense)}
+                      className="flex items-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Edit
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewComments(expense.id)}
+                    className="flex items-center gap-1 hover:bg-secondary transition-colors"
+                  >
+                    <MessageCircle className="h-3 w-3" />
+                    Comments
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

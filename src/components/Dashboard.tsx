@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,6 +12,8 @@ import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
 import { HomeManager } from './HomeManager';
 import { LogOut, Plus, Receipt, TrendingUp, Home } from 'lucide-react';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { PaymentRequests } from '@/components/PaymentRequests';
 
 interface Expense {
   id: string;
@@ -32,6 +33,7 @@ export const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
   useEffect(() => {
     if (user) {
@@ -127,7 +129,7 @@ export const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         <Tabs defaultValue="homes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger 
               value="homes" 
               className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
@@ -151,6 +153,14 @@ export const Dashboard = () => {
               <TrendingUp className="h-4 w-4" />
               <span className="hidden sm:inline">Balances</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="payments"
+              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
+              disabled={!currentHomeId}
+            >
+              <Receipt className="h-4 w-4" />
+              <span className="hidden sm:inline">Payments</span>
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="homes" className="space-y-6">
@@ -172,22 +182,36 @@ export const Dashboard = () => {
           
           <TabsContent value="expenses" className="space-y-6">
             {currentHomeId ? (
-              <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <Receipt className="h-5 w-5 text-primary" />
-                    Recent Expenses
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ExpenseList 
-                    refreshTrigger={refreshTrigger}
-                    onEditExpense={handleEditExpense}
-                    onViewComments={handleViewComments}
-                    currentHomeId={currentHomeId}
-                  />
-                </CardContent>
-              </Card>
+              <>
+                <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center justify-between gap-2 text-lg md:text-xl">
+                      <div className="flex items-center gap-2">
+                        <Receipt className="h-5 w-5 text-primary" />
+                        Expenses for {format(selectedMonth, 'MMMM yyyy')}
+                      </div>
+                      <Button
+                        onClick={() => setShowAddExpense(true)}
+                        size="sm"
+                        className="ml-auto"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Expense
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ExpenseList 
+                      refreshTrigger={refreshTrigger}
+                      onEditExpense={handleEditExpense}
+                      onViewComments={handleViewComments}
+                      currentHomeId={currentHomeId}
+                      selectedMonth={selectedMonth}
+                      onMonthChange={setSelectedMonth}
+                    />
+                  </CardContent>
+                </Card>
+              </>
             ) : (
               <Card>
                 <CardContent className="text-center py-8">
@@ -204,6 +228,18 @@ export const Dashboard = () => {
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">Please select a home first to view balances</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="payments" className="space-y-6">
+            {currentHomeId ? (
+              <PaymentRequests currentHomeId={currentHomeId} />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">Please select a home first to view payment requests</p>
                 </CardContent>
               </Card>
             )}
