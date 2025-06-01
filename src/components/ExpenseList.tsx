@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +19,13 @@ interface Expense {
   payer_id: string;
 }
 
+interface Profile {
+  id: string;
+  name: string;
+  email: string;
+  avatar_url?: string;
+}
+
 interface ExpenseListProps {
   refreshTrigger?: number;
   onEditExpense: (expense: Expense) => void;
@@ -29,7 +35,7 @@ interface ExpenseListProps {
 export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: ExpenseListProps) => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, any>>({});
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,7 +92,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments }: E
       const profileMap = data.reduce((acc, profile) => {
         acc[profile.id] = profile;
         return acc;
-      }, {});
+      }, {} as Record<string, Profile>);
       setProfiles(profileMap);
     }
   };
