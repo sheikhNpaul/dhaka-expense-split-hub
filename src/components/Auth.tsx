@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ForgotPassword } from './ForgotPassword';
+import { isEmailInUse } from '@/lib/auth';
 
 export const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -23,6 +23,12 @@ export const Auth = () => {
 
     try {
       if (isSignUp) {
+        // Check if email is already in use
+        const emailExists = await isEmailInUse(email);
+        if (emailExists) {
+          throw new Error('This email is already registered. Please use a different email or sign in.');
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,

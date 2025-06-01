@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { User, Settings, Upload, Edit } from 'lucide-react';
+import { isEmailInUse } from '@/lib/auth';
 
 interface UserProfileProps {
   profile: any;
@@ -82,6 +83,12 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
 
       // Update email if changed
       if (formData.email !== user?.email) {
+        // Check if new email is already in use
+        const emailExists = await isEmailInUse(formData.email);
+        if (emailExists) {
+          throw new Error('This email is already registered. Please use a different email.');
+        }
+
         const { error: emailError } = await supabase.auth.updateUser({
           email: formData.email
         });
