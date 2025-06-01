@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { User, Settings, Upload } from 'lucide-react';
+import { User, Settings, Upload, Edit } from 'lucide-react';
 
 interface UserProfileProps {
   profile: any;
@@ -21,13 +20,46 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [currentProfile, setCurrentProfile] = useState<any>(null);
   const [formData, setFormData] = useState({
-    name: profile?.name || '',
-    username: profile?.username || '',
-    email: user?.email || '',
+    name: '',
+    username: '',
+    email: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Fetch current profile data when dialog opens
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchCurrentProfile();
+    }
+  }, [isOpen, user]);
+
+  const fetchCurrentProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      setCurrentProfile(data);
+      setFormData({
+        name: data?.name || '',
+        username: data?.username || '',
+        email: user?.email || '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +68,8 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
     try {
       // Update profile in profiles table
       const updates: any = {};
-      if (formData.name !== profile?.name) updates.name = formData.name;
-      if (formData.username !== profile?.username) updates.username = formData.username;
+      if (formData.name !== currentProfile?.name) updates.name = formData.name;
+      if (formData.username !== currentProfile?.username) updates.username = formData.username;
 
       if (Object.keys(updates).length > 0) {
         const { error: profileError } = await supabase
@@ -157,6 +189,9 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
               {profile?.name ? getInitials(profile.name) : <User className="h-5 w-5" />}
             </AvatarFallback>
           </Avatar>
+          <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1">
+            <Edit className="h-3 w-3" />
+          </div>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -173,9 +208,9 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <Avatar className="h-24 w-24 ring-4 ring-primary/20">
-                <AvatarImage src={profile?.avatar_url} alt={profile?.name || 'User'} />
+                <AvatarImage src={currentProfile?.avatar_url} alt={currentProfile?.name || 'User'} />
                 <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-2xl">
-                  {profile?.name ? getInitials(profile.name) : <User className="h-10 w-10" />}
+                  {currentProfile?.name ? getInitials(currentProfile.name) : <User className="h-10 w-10" />}
                 </AvatarFallback>
               </Avatar>
               <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 cursor-pointer transition-colors">
