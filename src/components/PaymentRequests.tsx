@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 interface PaymentRequest {
   id: string;
@@ -20,10 +20,24 @@ interface PaymentRequest {
   to_user: { name: string; email: string; avatar_url: string };
 }
 
-export const PaymentRequests = ({ currentHomeId }: { currentHomeId: string }) => {
+interface PaymentRequestsProps {
+  currentHomeId: string;
+  onPaymentStatusChange?: () => void;
+  selectedMonth?: Date;
+}
+
+export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selectedMonth }: PaymentRequestsProps) => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Helper function to check if a date is in the selected month
+  const isInSelectedMonth = (dateStr: string) => {
+    if (!selectedMonth) return true; // If no month selected, show all
+    const date = new Date(dateStr);
+    return date.getMonth() === selectedMonth.getMonth() && 
+           date.getFullYear() === selectedMonth.getFullYear();
+  };
 
   const fetchPaymentRequests = async () => {
     if (!user || !currentHomeId) return;
@@ -42,7 +56,13 @@ export const PaymentRequests = ({ currentHomeId }: { currentHomeId: string }) =>
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+
+      // Filter by selected month if specified
+      const filteredData = selectedMonth
+        ? (data || []).filter(request => isInSelectedMonth(request.created_at))
+        : (data || []);
+
+      setRequests(filteredData);
     } catch (error) {
       console.error('Error fetching payment requests:', error);
       toast({
@@ -54,6 +74,10 @@ export const PaymentRequests = ({ currentHomeId }: { currentHomeId: string }) =>
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchPaymentRequests();
+  }, [user, currentHomeId, selectedMonth]);
 
   // Set up real-time subscription for payment requests
   useEffect(() => {
@@ -78,11 +102,7 @@ export const PaymentRequests = ({ currentHomeId }: { currentHomeId: string }) =>
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, currentHomeId]);
-
-  useEffect(() => {
-    fetchPaymentRequests();
-  }, [user, currentHomeId]);
+  }, [user, currentHomeId, selectedMonth]);
 
   const handleUpdateRequest = async (requestId: string, status: 'approved' | 'rejected') => {
     try {
@@ -98,9 +118,14 @@ export const PaymentRequests = ({ currentHomeId }: { currentHomeId: string }) =>
 
       toast({
         title: "Success",
-        description: `Payment request ${status}`,
+        description: status === 'approved' ? "Payment marked as settled" : "Payment request rejected",
       });
+      
+      // Refresh payment requests
       fetchPaymentRequests();
+      
+      // Notify parent component to refresh balances and payment statuses
+      onPaymentStatusChange?.();
     } catch (error) {
       console.error('Error updating payment request:', error);
       toast({
@@ -123,12 +148,17 @@ export const PaymentRequests = ({ currentHomeId }: { currentHomeId: string }) =>
   return (
     <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Payment Requests</span>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-4">
+            <span>Payment Requests</span>
+            <div className="text-sm text-muted-foreground">
+              {selectedMonth ? format(selectedMonth, 'MMMM yyyy') : 'All Time'}
+            </div>
+          </CardTitle>
           <Badge variant="outline" className="ml-2">
             {requests.length} request{requests.length !== 1 ? 's' : ''}
           </Badge>
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (

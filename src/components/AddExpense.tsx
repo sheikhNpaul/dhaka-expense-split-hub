@@ -26,9 +26,10 @@ interface AddExpenseProps {
   onClose: () => void;
   onExpenseAdded: () => void;
   currentHomeId: string;
+  defaultDate?: Date;
 }
 
-export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpenseProps) => {
+export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate }: AddExpenseProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -137,6 +138,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId }: AddExpens
           payer_id: user.id,
           participants: formData.selectedParticipants,
           home_id: currentHomeId,
+          created_at: defaultDate ? new Date(defaultDate).toISOString() : new Date().toISOString(),
           split_type: formData.selectedParticipants.length === 1 ? 'one_person' : 
                      formData.selectedParticipants.length === 2 ? 'two_people' : 'all_three'
         });

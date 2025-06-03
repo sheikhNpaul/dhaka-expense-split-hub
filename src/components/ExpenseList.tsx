@@ -5,9 +5,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { formatDistanceToNow, startOfMonth, endOfMonth, format, startOfDay, endOfDay, isSameDay } from 'date-fns';
+import { formatDistanceToNow, startOfMonth, endOfMonth, format } from 'date-fns';
 import { Edit, MessageCircle, Clock, Users, Calendar } from 'lucide-react';
-import { ExpenseCalendar } from './ExpenseCalendar';
 
 interface Expense {
   id: string;
@@ -37,60 +36,19 @@ interface ExpenseListProps {
   onMonthChange: (date: Date) => void;
 }
 
-export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, currentHomeId, selectedMonth, onMonthChange }: ExpenseListProps) => {
+export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, currentHomeId, selectedMonth }: ExpenseListProps) => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [monthlyTotal, setMonthlyTotal] = useState(0);
-  const [allExpenses, setAllExpenses] = useState<Expense[]>([]);
-  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
     if (user && currentHomeId) {
       fetchExpenses();
       fetchProfiles();
     }
-  }, [user, refreshTrigger, currentHomeId]);
-
-  // Filter expenses when date changes
-  useEffect(() => {
-    if (selectedDate && allExpenses.length > 0) {
-      const filtered = allExpenses.filter(expense => 
-        isSameDay(new Date(expense.created_at), selectedDate)
-      );
-      setExpenses(filtered);
-      setMonthlyTotal(filtered.reduce((sum, expense) => sum + expense.amount, 0));
-    } else {
-      setExpenses(allExpenses);
-      setMonthlyTotal(allExpenses.reduce((sum, expense) => sum + expense.amount, 0));
-    }
-  }, [selectedDate, allExpenses]);
-
-  // Real-time subscription for new expenses
-  useEffect(() => {
-    if (!user || !currentHomeId) return;
-
-    const channel = supabase
-      .channel('expenses-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'expenses'
-        },
-        () => {
-          fetchExpenses();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, currentHomeId]);
+  }, [user, refreshTrigger, currentHomeId, selectedMonth]);
 
   const fetchExpenses = async () => {
     if (!user || !currentHomeId) return;
@@ -98,22 +56,23 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
     try {
       setLoading(true);
       
+      // Get the start and end of the selected month
+      const monthStart = startOfMonth(selectedMonth);
+      const monthEnd = endOfMonth(selectedMonth);
+      
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
         .eq('home_id', currentHomeId)
+        .gte('created_at', monthStart.toISOString())
+        .lte('created_at', monthEnd.toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        setAllExpenses(data);
-        // Initial filtering
-        const filtered = selectedDate
-          ? data.filter(expense => isSameDay(new Date(expense.created_at), selectedDate))
-          : data;
-        setExpenses(filtered);
-        setMonthlyTotal(filtered.reduce((sum, expense) => sum + expense.amount, 0));
+        setExpenses(data);
+        setMonthlyTotal(data.reduce((sum, expense) => sum + expense.amount, 0));
       }
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -175,22 +134,14 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
 
   return (
     <div className="space-y-6">
-      {/* Month selector and summary */}
+      {/* Monthly total */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/30 rounded-lg p-4">
-        <div className="w-full sm:w-auto">
-          <ExpenseCalendar
-            date={selectedDate}
-            onDateChange={setSelectedDate}
-            expenses={allExpenses}
-            className="w-full sm:w-auto"
-          />
-        </div>
-        <div className="text-center sm:text-right">
+        <div className="text-center sm:text-left">
           <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            {selectedDate ? 'Daily' : 'All'} Total: ৳{monthlyTotal.toFixed(2)}
+            Monthly Total: ৳{monthlyTotal.toFixed(2)}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {selectedDate ? format(selectedDate, 'dd MMMM yyyy') : 'All transactions'}
+            {format(selectedMonth, 'MMMM yyyy')}
           </p>
         </div>
       </div>
@@ -208,7 +159,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Calendar className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium mb-2">No expenses for {format(selectedDate, 'MMMM yyyy')}</h3>
+          <h3 className="text-lg font-medium mb-2">No expenses for {format(selectedMonth, 'MMMM yyyy')}</h3>
           <p className="text-muted-foreground mb-4">Add some expenses to start tracking</p>
         </div>
       ) : (

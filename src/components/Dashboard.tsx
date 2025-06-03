@@ -11,9 +11,10 @@ import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
 import { HomeManager } from './HomeManager';
-import { LogOut, Plus, Receipt, TrendingUp, Home } from 'lucide-react';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { LogOut, Plus, Receipt, TrendingUp, Home, ChevronLeft, ChevronRight } from 'lucide-react';
+import { startOfMonth, endOfMonth, format, addMonths, subMonths } from 'date-fns';
 import { PaymentRequests } from '@/components/PaymentRequests';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface Expense {
   id: string;
@@ -27,19 +28,32 @@ interface Expense {
 
 export const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
+
+  // Get current tab from URL search params or default to 'expenses'
+  const searchParams = new URLSearchParams(location.search);
+  const currentTab = searchParams.get('tab') || 'expenses';
 
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
   }, [user]);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(location.search);
+    params.set('tab', value);
+    navigate(`/?${params.toString()}`);
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -80,6 +94,14 @@ export const Dashboard = () => {
 
   const handleHomeSelected = (homeId: string) => {
     setCurrentHomeId(homeId);
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+    setSelectedMonth(prev => {
+      const newDate = direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1);
+      return startOfMonth(newDate);
+    });
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -128,7 +150,7 @@ export const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        <Tabs defaultValue="homes" className="space-y-6">
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
             <TabsTrigger 
               value="homes" 
@@ -186,9 +208,27 @@ export const Dashboard = () => {
                 <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center justify-between gap-2 text-lg md:text-xl">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-4">
                         <Receipt className="h-5 w-5 text-primary" />
-                        Expenses for {format(selectedMonth, 'MMMM yyyy')}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleMonthChange('prev')}
+                            className="h-8 w-8"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span>{format(selectedMonth, 'MMMM yyyy')}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleMonthChange('next')}
+                            className="h-8 w-8"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <Button
                         onClick={() => setShowAddExpense(true)}
@@ -223,7 +263,7 @@ export const Dashboard = () => {
           
           <TabsContent value="balances" className="space-y-6">
             {currentHomeId ? (
-              <BalanceDashboard currentHomeId={currentHomeId} />
+              <BalanceDashboard currentHomeId={currentHomeId} selectedMonth={selectedMonth} />
             ) : (
               <Card>
                 <CardContent className="text-center py-8">
@@ -235,7 +275,11 @@ export const Dashboard = () => {
           
           <TabsContent value="payments" className="space-y-6">
             {currentHomeId ? (
-              <PaymentRequests currentHomeId={currentHomeId} />
+              <PaymentRequests 
+                currentHomeId={currentHomeId} 
+                onPaymentStatusChange={() => setRefreshTrigger(prev => prev + 1)}
+                selectedMonth={selectedMonth}
+              />
             ) : (
               <Card>
                 <CardContent className="text-center py-8">
@@ -253,6 +297,7 @@ export const Dashboard = () => {
           onClose={() => setShowAddExpense(false)}
           onExpenseAdded={handleExpenseAdded}
           currentHomeId={currentHomeId}
+          defaultDate={selectedMonth}
         />
       )}
 

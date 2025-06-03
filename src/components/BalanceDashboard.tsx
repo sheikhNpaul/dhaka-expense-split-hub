@@ -9,6 +9,7 @@ import { User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { CreditCard } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format } from 'date-fns';
 
 interface Balance {
   userId: string;
@@ -45,11 +46,17 @@ interface PaymentRequest {
   updated_at: string;
 }
 
-interface BalanceDashboardProps {
-  currentHomeId: string;
+interface PaymentStatus {
+  isSettled: boolean;
+  lastPaymentAmount: number;
 }
 
-export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
+interface BalanceDashboardProps {
+  currentHomeId: string;
+  selectedMonth?: Date;
+}
+
+export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashboardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -60,69 +67,106 @@ export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
     toUserId: string;
     amount: number;
   } | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (!user || !currentHomeId) return;
+
+    console.log('Setting up real-time subscriptions for home:', currentHomeId);
+
+    const channel = supabase
+      .channel('realtime-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'expenses',
+          filter: `home_id=eq.${currentHomeId}`
+        },
+        (payload) => {
+          console.log('Expense change detected:', payload);
+          setRefreshKey(prev => prev + 1);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'payment_requests',
+          filter: `home_id=eq.${currentHomeId}`
+        },
+        (payload) => {
+          console.log('Payment request change detected:', payload);
+          setRefreshKey(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up subscriptions');
+      supabase.removeChannel(channel);
+    };
+  }, [currentHomeId, user]);
 
   useEffect(() => {
     if (user && currentHomeId) {
+      console.log('Fetching balances due to change in:', { refreshKey, currentHomeId, selectedMonth });
       fetchBalances();
-      
-      // Set up real-time subscription for expenses changes
-      const channel = supabase
-        .channel('balance-updates')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'expenses'
-          },
-          () => {
-            console.log('Expense changed, recalculating balances...');
-            fetchBalances();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
-  }, [user, currentHomeId]);
+  }, [user, currentHomeId, refreshKey, selectedMonth]);
+
+  // Helper function to check if a date is in the selected month
+  const isInSelectedMonth = (dateStr: string) => {
+    if (!selectedMonth) return true; // If no month selected, show all
+    const date = new Date(dateStr);
+    return date.getMonth() === selectedMonth.getMonth() && 
+           date.getFullYear() === selectedMonth.getFullYear();
+  };
 
   const fetchBalances = async () => {
     if (!user || !currentHomeId) return;
 
     try {
       setLoading(true);
+      console.log('Starting balance calculation for home:', currentHomeId);
 
-      // Fetch expenses for this home and profiles in parallel
-      const [expensesResult, profilesResult] = await Promise.all([
-        supabase.from('expenses').select('*').eq('home_id', currentHomeId),
-        supabase.from('profiles').select('id, name, email, avatar_url')
+      // Get all data ordered by creation date
+      const [expensesResult, profilesResult, paymentsResult] = await Promise.all([
+        supabase
+          .from('expenses')
+          .select('*')
+          .eq('home_id', currentHomeId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('profiles')
+          .select('id, name, email, avatar_url'),
+        supabase
+          .from('payment_requests')
+          .select('*')
+          .eq('home_id', currentHomeId)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: true })
       ]);
 
-      if (expensesResult.error) {
-        console.error('Error fetching expenses:', expensesResult.error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch expenses",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (expensesResult.error) throw expensesResult.error;
+      if (profilesResult.error) throw profilesResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
 
-      if (profilesResult.error) {
-        console.error('Error fetching profiles:', profilesResult.error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch user profiles",
-          variant: "destructive",
-        });
-        return;
-      }
+      const allExpenses = expensesResult.data || [];
+      const profilesData = profilesResult.data || [];
+      const allPayments = paymentsResult.data || [];
 
-      const expenses = expensesResult.data as Expense[];
-      const profilesData = profilesResult.data as Profile[];
-      
+      // Filter expenses and payments by selected month
+      const expenses = selectedMonth 
+        ? allExpenses.filter(e => isInSelectedMonth(e.created_at))
+        : allExpenses;
+
+      const approvedPayments = selectedMonth
+        ? allPayments.filter(p => isInSelectedMonth(p.created_at))
+        : allPayments;
+
       // Create profiles map
       const profileMap = profilesData.reduce((acc, profile) => {
         acc[profile.id] = profile;
@@ -130,17 +174,23 @@ export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
       }, {} as Record<string, Profile>);
       setProfiles(profileMap);
 
-      // Calculate balances
-      const userBalances: Record<string, Balance> = {};
+      // Create a timeline of all events (expenses and payments) sorted by date
+      const timeline = [
+        ...expenses.map(e => ({ type: 'expense' as const, data: e, date: e.created_at })),
+        ...approvedPayments.map(p => ({ type: 'payment' as const, data: p, date: p.created_at }))
+      ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      // Initialize all users who have participated in expenses
+      // Initialize balances
+      const userBalances: Record<string, Balance> = {};
       const allUserIds = new Set<string>();
+
+      // Collect all user IDs
       expenses.forEach(expense => {
         allUserIds.add(expense.payer_id);
         expense.participants.forEach(participantId => allUserIds.add(participantId));
       });
 
-      // Initialize balance objects for all users
+      // Initialize balance objects
       allUserIds.forEach(userId => {
         const profile = profileMap[userId];
         userBalances[userId] = {
@@ -152,77 +202,56 @@ export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
         };
       });
 
-      // Process each expense to calculate who owes whom
-      expenses.forEach(expense => {
-        const { payer_id, participants, amount } = expense;
-        const participantCount = participants.length;
-        
-        // Calculate split amount based on number of participants
-        const splitAmount = amount / participantCount;
+      // Process timeline events in chronological order
+      timeline.forEach(event => {
+        if (event.type === 'expense') {
+          const expense = event.data;
+          const splitAmount = expense.amount / expense.participants.length;
 
-        participants.forEach(participantId => {
-          if (participantId !== payer_id) {
-            // This participant owes the payer
-            if (!userBalances[participantId].owes[payer_id]) {
-              userBalances[participantId].owes[payer_id] = 0;
-            }
-            userBalances[participantId].owes[payer_id] += splitAmount;
-
-            // The payer is owed by this participant
-            if (!userBalances[payer_id].isOwed[participantId]) {
-              userBalances[payer_id].isOwed[participantId] = 0;
-            }
-            userBalances[payer_id].isOwed[participantId] += splitAmount;
-          }
-        });
-      });
-
-      // Calculate net balances and simplify debts
-      Object.values(userBalances).forEach(balance => {
-        const totalOwed = Object.values(balance.isOwed).reduce((sum, amount) => sum + amount, 0);
-        const totalOwes = Object.values(balance.owes).reduce((sum, amount) => sum + amount, 0);
-        balance.netBalance = totalOwed - totalOwes;
-      });
-
-      // Simplify mutual debts
-      Object.keys(userBalances).forEach(userId1 => {
-        Object.keys(userBalances).forEach(userId2 => {
-          if (userId1 !== userId2) {
-            const user1OwesUser2 = userBalances[userId1].owes[userId2] || 0;
-            const user2OwesUser1 = userBalances[userId2].owes[userId1] || 0;
-            
-            if (user1OwesUser2 > 0 && user2OwesUser1 > 0) {
-              const netDebt = user1OwesUser2 - user2OwesUser1;
-              
-              if (netDebt > 0) {
-                userBalances[userId1].owes[userId2] = netDebt;
-                delete userBalances[userId2].owes[userId1];
-                userBalances[userId2].isOwed[userId1] = netDebt;
-                delete userBalances[userId1].isOwed[userId2];
-              } else if (netDebt < 0) {
-                userBalances[userId2].owes[userId1] = Math.abs(netDebt);
-                delete userBalances[userId1].owes[userId2];
-                userBalances[userId1].isOwed[userId2] = Math.abs(netDebt);
-                delete userBalances[userId2].isOwed[userId1];
-              } else {
-                delete userBalances[userId1].owes[userId2];
-                delete userBalances[userId2].owes[userId1];
-                delete userBalances[userId1].isOwed[userId2];
-                delete userBalances[userId2].isOwed[userId1];
+          expense.participants.forEach(participantId => {
+            if (participantId !== expense.payer_id) {
+              // Initialize or add to existing balance
+              if (!userBalances[participantId].owes[expense.payer_id]) {
+                userBalances[participantId].owes[expense.payer_id] = 0;
               }
+              if (!userBalances[expense.payer_id].isOwed[participantId]) {
+                userBalances[expense.payer_id].isOwed[participantId] = 0;
+              }
+
+              userBalances[participantId].owes[expense.payer_id] += splitAmount;
+              userBalances[expense.payer_id].isOwed[participantId] += splitAmount;
             }
+          });
+        } else if (event.type === 'payment') {
+          const payment = event.data;
+          
+          // When a payment is made, clear the entire debt between these users
+          if (userBalances[payment.from_user_id]) {
+            delete userBalances[payment.from_user_id].owes[payment.to_user_id];
           }
+          if (userBalances[payment.to_user_id]) {
+            delete userBalances[payment.to_user_id].isOwed[payment.from_user_id];
+          }
+        }
+
+        // Calculate net balances after each event
+        Object.values(userBalances).forEach(balance => {
+          balance.netBalance = 
+            Object.values(balance.isOwed).reduce((sum, amount) => sum + amount, 0) -
+            Object.values(balance.owes).reduce((sum, amount) => sum + amount, 0);
         });
       });
 
-      // Recalculate net balances after simplification
-      Object.values(userBalances).forEach(balance => {
-        const totalOwed = Object.values(balance.isOwed).reduce((sum, amount) => sum + amount, 0);
-        const totalOwes = Object.values(balance.owes).reduce((sum, amount) => sum + amount, 0);
-        balance.netBalance = totalOwed - totalOwes;
-      });
+      // Remove users with no balances
+      const activeBalances = Object.values(userBalances).filter(balance => 
+        Object.keys(balance.owes).length > 0 || 
+        Object.keys(balance.isOwed).length > 0 ||
+        balance.netBalance !== 0
+      );
 
-      setBalances(Object.values(userBalances));
+      console.log('Final balances:', JSON.parse(JSON.stringify(activeBalances)));
+      setBalances(activeBalances);
+
     } catch (error) {
       console.error('Error in fetchBalances:', error);
       toast({
@@ -277,7 +306,6 @@ export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
     if (!selectedPayment || !user) return;
 
     try {
-      // Create a payment request
       const { error: requestError } = await supabase
         .from('payment_requests')
         .insert({
@@ -334,9 +362,16 @@ export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
       <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
         <CardHeader>
           <div className="flex items-center justify-between mb-6">
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Balance Summary
-            </CardTitle>
+            <div className="flex items-center gap-4">
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                Balance Summary
+              </CardTitle>
+              <div className="flex items-center gap-2 ml-4">
+                <span className="text-sm text-muted-foreground">
+                  {selectedMonth ? format(selectedMonth, 'MMMM yyyy') : 'All Time'}
+                </span>
+              </div>
+            </div>
             <div className="text-sm text-muted-foreground">
               {balances.length} participant{balances.length > 1 ? 's' : ''}
             </div>
@@ -438,7 +473,6 @@ export const BalanceDashboard = ({ currentHomeId }: BalanceDashboardProps) => {
         </CardContent>
       </Card>
 
-      {/* Payment Dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent>
           <DialogHeader>
