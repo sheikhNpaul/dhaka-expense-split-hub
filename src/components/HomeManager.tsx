@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Home, Plus, Users, Copy, Check } from 'lucide-react';
+import { HomeAdmin } from './HomeAdmin';
 
 interface Home {
   id: string;
@@ -16,6 +17,17 @@ interface Home {
   home_code: string;
   created_by: string;
   created_at: string;
+}
+
+interface HomeMember {
+  id: string;
+  user_id: string;
+  is_admin: boolean;
+  is_active: boolean;
+  profile: {
+    name: string;
+    email: string;
+  };
 }
 
 interface HomeManagerProps {
@@ -27,6 +39,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
   const { user } = useAuth();
   const { toast } = useToast();
   const [homes, setHomes] = useState<Home[]>([]);
+  const [members, setMembers] = useState<Record<string, HomeMember[]>>({});
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,7 +56,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
     if (user) {
       fetchUserHomes();
     }
-  }, [user]);
+  }, [user, currentHomeId]);
 
   const fetchUserHomes = async () => {
     if (!user) return;
@@ -64,9 +77,68 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       .eq('user_id', user.id)
       .eq('is_active', true);
 
+    if (error) {
+      console.error('Error fetching homes:', error);
+      return;
+    }
+
     if (data) {
       const userHomes = data.map(item => item.homes).filter(Boolean) as Home[];
       setHomes(userHomes);
+      
+      // Clear existing members data before fetching new data
+      setMembers({});
+      
+      // Fetch members for each home
+      userHomes.forEach(home => {
+        fetchHomeMembers(home.id);
+      });
+    }
+  };
+
+  const fetchHomeMembers = async (homeId: string) => {
+    try {
+      // First get home members
+      const { data: membersData, error: membersError } = await supabase
+        .from('home_members')
+        .select('id, user_id, is_admin, is_active')
+        .eq('home_id', homeId)
+        .eq('is_active', true);
+
+      if (membersError) {
+        console.error('Error fetching home members:', membersError);
+        return;
+      }
+
+      if (membersData && membersData.length > 0) {
+        // Then get profiles for these users
+        const userIds = membersData.map(member => member.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, name, email')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          return;
+        }
+
+        // Combine the data
+        const transformedData = membersData.map(member => {
+          const profile = profilesData?.find(p => p.id === member.user_id);
+          return {
+            ...member,
+            profile: profile || { name: 'Unknown', email: '' }
+          };
+        });
+
+        setMembers(prev => ({
+          ...prev,
+          [homeId]: transformedData as HomeMember[]
+        }));
+      }
+    } catch (error) {
+      console.error('Error in fetchHomeMembers:', error);
     }
   };
 
@@ -113,12 +185,13 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
 
       if (homeError) throw homeError;
 
-      // Add creator as a member
+      // Add creator as a member and admin
       const { error: memberError } = await supabase
         .from('home_members')
         .insert({
           home_id: homeData.id,
-          user_id: user.id
+          user_id: user.id,
+          is_admin: true
         });
 
       if (memberError) throw memberError;
@@ -180,12 +253,13 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
           .eq('home_id', homeData.id)
           .eq('user_id', user.id);
       } else {
-        // Add as new member
+        // Add as new member (not admin)
         await supabase
           .from('home_members')
           .insert({
             home_id: homeData.id,
-            user_id: user.id
+            user_id: user.id,
+            is_admin: false
           });
       }
 
@@ -337,7 +411,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
 
       <div className="grid gap-4 md:grid-cols-2">
         {homes.map((home) => (
-          <Card key={home.id} className={`cursor-pointer transition-all ${currentHomeId === home.id ? 'ring-2 ring-primary' : ''}`}>
+          <Card key={home.id} className={`transition-all ${currentHomeId === home.id ? 'ring-2 ring-primary' : ''}`}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{home.name}</CardTitle>
@@ -349,7 +423,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                 <p className="text-sm text-muted-foreground">{home.address}</p>
               )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <code className="bg-muted px-2 py-1 rounded text-sm">{home.home_code}</code>
@@ -375,6 +449,16 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                   </Button>
                 )}
               </div>
+
+              {/* Admin Section */}
+              {members[home.id] && user && (
+                <HomeAdmin
+                  homeId={home.id}
+                  members={members[home.id]}
+                  currentUserId={user.id}
+                  onMembershipChange={fetchUserHomes}
+                />
+              )}
             </CardContent>
           </Card>
         ))}
