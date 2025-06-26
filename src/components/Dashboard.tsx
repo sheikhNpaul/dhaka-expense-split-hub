@@ -11,7 +11,8 @@ import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
 import { HomeManager } from './HomeManager';
-import { LogOut, Plus, Receipt, TrendingUp, Home, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MealPlanner } from './MealPlanner';
+import { LogOut, Plus, Receipt, TrendingUp, Home, ChevronLeft, ChevronRight, Utensils } from 'lucide-react';
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from 'date-fns';
 import { PaymentRequests } from '@/components/PaymentRequests';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -151,7 +152,7 @@ export const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50 backdrop-blur-sm p-1 rounded-xl h-12 sm:h-auto">
+          <TabsList className="grid w-full grid-cols-5 bg-muted/50 backdrop-blur-sm p-1 rounded-xl h-12 sm:h-auto">
             <TabsTrigger 
               value="homes" 
               className="flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg text-xs sm:text-sm h-10 sm:h-auto px-2 sm:px-3"
@@ -166,6 +167,14 @@ export const Dashboard = () => {
             >
               <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Expenses</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="meals"
+              className="flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50 text-xs sm:text-sm h-10 sm:h-auto px-2 sm:px-3"
+              disabled={!currentHomeId}
+            >
+              <Utensils className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Meals</span>
             </TabsTrigger>
             <TabsTrigger 
               value="balances"
@@ -256,6 +265,22 @@ export const Dashboard = () => {
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">Please select a home first to view expenses</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="meals" className="space-y-6">
+            {currentHomeId ? (
+              <MealPlanner 
+                currentHomeId={currentHomeId} 
+                selectedMonth={selectedMonth}
+                refreshTrigger={refreshTrigger}
+              />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">Please select a home first to view meals</p>
                 </CardContent>
               </Card>
             )}
