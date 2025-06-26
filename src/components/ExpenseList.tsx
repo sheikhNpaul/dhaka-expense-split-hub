@@ -133,14 +133,14 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Monthly total */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/30 rounded-lg p-4">
         <div className="text-center sm:text-left">
-          <h3 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <h3 className="text-base sm:text-lg font-semibold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
             Monthly Total: ৳{monthlyTotal.toFixed(2)}
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {format(selectedMonth, 'MMMM yyyy')}
           </p>
         </div>
@@ -159,27 +159,27 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Calendar className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-lg font-medium mb-2">No expenses for {format(selectedMonth, 'MMMM yyyy')}</h3>
+          <h3 className="text-base sm:text-lg font-medium mb-2">No expenses for {format(selectedMonth, 'MMMM yyyy')}</h3>
           <p className="text-muted-foreground mb-4">Add some expenses to start tracking</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {expenses.map((expense) => (
             <Card key={expense.id} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-r from-card to-card/80 backdrop-blur">
-              <CardContent className="p-4 md:p-6">
+              <CardContent className="p-4 sm:p-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg truncate">{expense.title}</h3>
+                    <h3 className="font-semibold text-base sm:text-lg truncate">{expense.title}</h3>
                     {expense.description && (
-                      <p className="text-muted-foreground text-sm mt-1 line-clamp-2">{expense.description}</p>
+                      <p className="text-muted-foreground text-xs sm:text-sm mt-1 line-clamp-2">{expense.description}</p>
                     )}
                   </div>
                   <div className="text-right sm:text-right shrink-0">
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="text-xl sm:text-2xl font-bold text-green-600">
                       ৳{expense.amount.toFixed(2)}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       ৳{getAmountPerPerson(expense.amount, expense.participants.length)} per person
                     </p>
                   </div>
@@ -187,17 +187,17 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                 
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <Badge className={getSplitTypeColor(expense.participants.length)}>
+                  <Badge className={`${getSplitTypeColor(expense.participants.length)} text-xs`}>
                     {getSplitTypeLabel(expense.participants.length)}
                   </Badge>
-                  <Badge variant="outline" className="flex items-center gap-1">
+                  <Badge variant="outline" className="flex items-center gap-1 text-xs">
                     <Users className="h-3 w-3" />
                     {expense.participants.length} participant{expense.participants.length > 1 ? 's' : ''}
                   </Badge>
                 </div>
 
                 {/* Payer and Time */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 text-sm text-muted-foreground">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 text-xs sm:text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <span>Paid by:</span>
                     <div className="flex items-center gap-2">
@@ -214,13 +214,22 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
-                    {formatDistanceToNow(new Date(expense.created_at), { addSuffix: true })}
+                    {new Date(expense.created_at).toLocaleString('en-US', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false,
+                      timeZone: 'Asia/Dhaka',
+                      timeZoneName: 'short'
+                    })}
                   </div>
                 </div>
 
                 {/* Participants */}
                 <div className="mb-4">
-                  <span className="text-sm text-muted-foreground mb-2 block">Participants:</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground mb-2 block">Participants:</span>
                   <div className="flex flex-wrap gap-2">
                     {expense.participants.map((participantId) => (
                       <div key={participantId} className="flex items-center gap-2 bg-muted/50 rounded-full px-3 py-1">
@@ -230,7 +239,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                             {profiles[participantId]?.name ? getInitials(profiles[participantId].name) : '?'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium">
+                        <span className="text-xs sm:text-sm font-medium">
                           {profiles[participantId]?.name || profiles[participantId]?.email || 'Unknown'}
                         </span>
                       </div>
@@ -239,13 +248,13 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   {expense.payer_id === user?.id && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => onEditExpense(expense)}
-                      className="flex items-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors"
+                      className="flex items-center justify-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors h-10 sm:h-9"
                     >
                       <Edit className="h-3 w-3" />
                       Edit
@@ -255,7 +264,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                     variant="outline"
                     size="sm"
                     onClick={() => onViewComments(expense.id)}
-                    className="flex items-center gap-1 hover:bg-secondary transition-colors"
+                    className="flex items-center justify-center gap-1 hover:bg-secondary transition-colors h-10 sm:h-9"
                   >
                     <MessageCircle className="h-3 w-3" />
                     Comments

@@ -142,6 +142,10 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
     }
   };
 
+  const refreshHomeMembers = async (homeId: string) => {
+    await fetchHomeMembers(homeId);
+  };
+
   const generateHomeCode = () => {
     return Math.random().toString(36).substring(2, 10).toUpperCase();
   };
@@ -235,7 +239,16 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         .eq('home_code', joinCode.toUpperCase())
         .single();
 
-      if (homeError) throw new Error('Home not found with this code');
+      if (homeError) {
+        if (homeError.code === 'PGRST116') {
+          throw new Error('Home not found with this code. The home may have been deleted.');
+        }
+        throw new Error('Home not found with this code');
+      }
+
+      if (!homeData) {
+        throw new Error('Home not found with this code. The home may have been deleted.');
+      }
 
       // Check if already a member
       const { data: existingMember } = await supabase
@@ -316,22 +329,24 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Home className="h-5 w-5" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h2 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+          <Home className="h-4 w-4 sm:h-5 sm:w-5" />
           Your Homes
         </h2>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowJoinForm(!showJoinForm)}
+            className="h-10 sm:h-9"
           >
             Join Home
           </Button>
           <Button
             size="sm"
             onClick={() => setShowCreateForm(!showCreateForm)}
+            className="h-10 sm:h-9"
           >
             <Plus className="h-4 w-4 mr-1" />
             Create Home
@@ -342,34 +357,36 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       {showCreateForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Create New Home</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Create New Home</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateHome} className="space-y-4">
               <div>
-                <Label htmlFor="home-name">Home Name</Label>
+                <Label htmlFor="home-name" className="text-sm font-medium">Home Name</Label>
                 <Input
                   id="home-name"
                   value={createForm.name}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., Our Apartment"
                   required
+                  className="h-11 sm:h-10"
                 />
               </div>
               <div>
-                <Label htmlFor="home-address">Address (Optional)</Label>
+                <Label htmlFor="home-address" className="text-sm font-medium">Address (Optional)</Label>
                 <Input
                   id="home-address"
                   value={createForm.address}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="e.g., 123 Main St, City"
+                  className="h-11 sm:h-10"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={loading}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button type="submit" disabled={loading} className="h-11 sm:h-10">
                   {loading ? 'Creating...' : 'Create Home'}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)} className="h-11 sm:h-10">
                   Cancel
                 </Button>
               </div>
@@ -381,12 +398,12 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       {showJoinForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Join Existing Home</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Join Existing Home</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleJoinHome} className="space-y-4">
               <div>
-                <Label htmlFor="join-code">Home Code</Label>
+                <Label htmlFor="join-code" className="text-sm font-medium">Home Code</Label>
                 <Input
                   id="join-code"
                   value={joinCode}
@@ -394,13 +411,14 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                   placeholder="Enter 8-character home code"
                   maxLength={8}
                   required
+                  className="h-11 sm:h-10"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button type="submit" disabled={loading}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button type="submit" disabled={loading} className="h-11 sm:h-10">
                   {loading ? 'Joining...' : 'Join Home'}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowJoinForm(false)}>
+                <Button type="button" variant="outline" onClick={() => setShowJoinForm(false)} className="h-11 sm:h-10">
                   Cancel
                 </Button>
               </div>
@@ -409,28 +427,29 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
         {homes.map((home) => (
           <Card key={home.id} className={`transition-all ${currentHomeId === home.id ? 'ring-2 ring-primary' : ''}`}>
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{home.name}</CardTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <CardTitle className="text-base sm:text-lg">{home.name}</CardTitle>
                 {currentHomeId === home.id && (
-                  <Badge variant="default">Current</Badge>
+                  <Badge variant="default" className="text-xs sm:text-sm">Current</Badge>
                 )}
               </div>
               {home.address && (
-                <p className="text-sm text-muted-foreground">{home.address}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">{home.address}</p>
               )}
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <code className="bg-muted px-2 py-1 rounded text-sm">{home.home_code}</code>
+                  <code className="bg-muted px-2 py-1 rounded text-xs sm:text-sm font-mono">{home.home_code}</code>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => copyHomeCode(home.home_code)}
+                    className="h-8 w-8 sm:h-8 sm:w-8"
                   >
                     {copiedCode === home.home_code ? (
                       <Check className="h-3 w-3" />
@@ -444,6 +463,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                     variant="outline"
                     size="sm"
                     onClick={() => handleSwitchHome(home.id)}
+                    className="h-10 sm:h-9"
                   >
                     Switch
                   </Button>
@@ -451,12 +471,14 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
               </div>
 
               {/* Admin Section */}
-              {members[home.id] && user && (
+              {members[home.id] && (
                 <HomeAdmin
                   homeId={home.id}
+                  homeName={home.name}
                   members={members[home.id]}
                   currentUserId={user.id}
-                  onMembershipChange={fetchUserHomes}
+                  onMembershipChange={() => refreshHomeMembers(home.id)}
+                  onHomeDeleted={fetchUserHomes}
                 />
               )}
             </CardContent>
@@ -468,8 +490,8 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         <Card>
           <CardContent className="text-center py-8">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">No homes yet</h3>
-            <p className="text-muted-foreground mb-4">
+            <h3 className="text-base sm:text-lg font-medium mb-2">No homes yet</h3>
+            <p className="text-muted-foreground mb-4 text-sm">
               Create a new home or join an existing one to start tracking expenses
             </p>
           </CardContent>

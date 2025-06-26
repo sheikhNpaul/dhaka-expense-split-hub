@@ -38,27 +38,31 @@ export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTrans
     
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.rpc('transfer_admin_rights', {
-        home_id_param: homeId,
-        from_user_id: user.id,
-        to_user_id: member.user_id
+      // Remove admin rights from current user
+      const { error: removeError } = await supabase
+        .from('home_members')
+        .update({ is_admin: false })
+        .eq('home_id', homeId)
+        .eq('user_id', user.id);
+
+      if (removeError) throw removeError;
+
+      // Grant admin rights to the new user
+      const { error: grantError } = await supabase
+        .from('home_members')
+        .update({ is_admin: true })
+        .eq('home_id', homeId)
+        .eq('user_id', member.user_id);
+
+      if (grantError) throw grantError;
+
+      toast({
+        title: "Success",
+        description: `Admin rights transferred to ${member.profile.name}`,
       });
-
-      if (error) throw error;
-
-      if (data) {
-        toast({
-          title: "Success",
-          description: `Admin rights transferred to ${member.profile.name}`,
-        });
-        onTransferComplete();
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to transfer admin rights. You might not be an admin.",
-          variant: "destructive",
-        });
-      }
+      
+      // Call immediately without delay
+      onTransferComplete();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -77,27 +81,27 @@ export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTrans
         variant="outline"
         size="sm"
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 h-10 sm:h-9"
       >
         <Shield className="h-4 w-4" />
         <span>Make Admin</span>
       </Button>
 
       <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Transfer Admin Rights</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg sm:text-xl">Transfer Admin Rights</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
               Are you sure you want to transfer your admin rights to {member.profile.name}? 
               You will no longer be an admin after this action.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isLoading} className="h-10 sm:h-9">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleTransfer}
               disabled={isLoading}
-              className="bg-primary"
+              className="bg-primary h-10 sm:h-9"
             >
               {isLoading ? "Transferring..." : "Transfer Admin Rights"}
             </AlertDialogAction>

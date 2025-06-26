@@ -54,9 +54,10 @@ interface PaymentStatus {
 interface BalanceDashboardProps {
   currentHomeId: string;
   selectedMonth?: Date;
+  refreshTrigger?: number;
 }
 
-export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashboardProps) => {
+export const BalanceDashboard = ({ currentHomeId, selectedMonth, refreshTrigger }: BalanceDashboardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [balances, setBalances] = useState<Balance[]>([]);
@@ -112,17 +113,19 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
 
   useEffect(() => {
     if (user && currentHomeId) {
-      console.log('Fetching balances due to change in:', { refreshKey, currentHomeId, selectedMonth });
+      console.log('Fetching balances due to change in:', { refreshKey, currentHomeId, selectedMonth, refreshTrigger });
       fetchBalances();
     }
-  }, [user, currentHomeId, refreshKey, selectedMonth]);
+  }, [user, currentHomeId, refreshKey, selectedMonth, refreshTrigger]);
 
   // Helper function to check if a date is in the selected month
   const isInSelectedMonth = (dateStr: string) => {
     if (!selectedMonth) return true; // If no month selected, show all
     const date = new Date(dateStr);
-    return date.getMonth() === selectedMonth.getMonth() && 
-           date.getFullYear() === selectedMonth.getFullYear();
+    // Convert to local timezone for comparison
+    const localDate = new Date(date.toLocaleString('en-US', { timeZone: 'Asia/Dhaka' }));
+    return localDate.getMonth() === selectedMonth.getMonth() && 
+           localDate.getFullYear() === selectedMonth.getFullYear();
   };
 
   const fetchBalances = async () => {
@@ -361,38 +364,38 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
     <>
       <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
         <CardHeader>
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 Balance Summary
               </CardTitle>
-              <div className="flex items-center gap-2 ml-4">
-                <span className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {selectedMonth ? format(selectedMonth, 'MMMM yyyy') : 'All Time'}
                 </span>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               {balances.length} participant{balances.length > 1 ? 's' : ''}
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {balances.map(balance => (
               <Card key={balance.userId} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-background/80 backdrop-blur">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                      <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-primary/20">
                         <AvatarImage src={profiles[balance.userId]?.avatar_url} alt={balance.userName} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-                          {balance.userName ? getInitials(balance.userName) : <User className="h-5 w-5" />}
+                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xs sm:text-sm">
+                          {balance.userName ? getInitials(balance.userName) : <User className="h-3 w-3 sm:h-5 sm:w-5" />}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium text-sm md:text-base truncate">{balance.userName}</span>
+                      <span className="font-medium text-sm truncate">{balance.userName}</span>
                     </div>
-                    <Badge variant={balance.netBalance >= 0 ? "default" : "destructive"} className="ml-2">
+                    <Badge variant={balance.netBalance >= 0 ? "default" : "destructive"} className="text-xs sm:text-sm">
                       {balance.netBalance >= 0 ? `+৳${balance.netBalance.toFixed(2)}` : `-৳${Math.abs(balance.netBalance).toFixed(2)}`}
                     </Badge>
                   </CardTitle>
@@ -400,12 +403,12 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
                 <CardContent className="pt-0">
                   {Object.keys(balance.owes).length > 0 && (
                     <div className="mb-3">
-                      <h4 className="font-medium text-destructive mb-2 text-sm">Owes:</h4>
-                      <div className="space-y-1">
+                      <h4 className="font-medium text-destructive mb-2 text-xs sm:text-sm">Owes:</h4>
+                      <div className="space-y-2">
                         {Object.entries(balance.owes).map(([userId, amount]) => (
-                          <div key={userId} className="flex justify-between text-sm bg-destructive/5 rounded-lg p-2">
+                          <div key={userId} className="flex flex-col sm:flex-row sm:justify-between text-xs sm:text-sm bg-destructive/5 rounded-lg p-2 gap-2">
                             <span className="flex items-center gap-2">
-                              <Avatar className="h-5 w-5">
+                              <Avatar className="h-4 w-4 sm:h-5 sm:w-5">
                                 <AvatarImage src={profiles[userId]?.avatar_url} />
                                 <AvatarFallback className="text-xs">
                                   {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
@@ -419,7 +422,7 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 px-2 hover:bg-primary hover:text-primary-foreground"
+                                  className="h-8 sm:h-7 px-2 hover:bg-primary hover:text-primary-foreground text-xs"
                                   onClick={() => {
                                     setSelectedPayment({ toUserId: userId, amount });
                                     setShowPaymentDialog(true);
@@ -438,12 +441,12 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
                   
                   {Object.keys(balance.isOwed).length > 0 && (
                     <div>
-                      <h4 className="font-medium text-green-600 mb-2 text-sm">Is owed:</h4>
-                      <div className="space-y-1">
+                      <h4 className="font-medium text-green-600 mb-2 text-xs sm:text-sm">Is owed:</h4>
+                      <div className="space-y-2">
                         {Object.entries(balance.isOwed).map(([userId, amount]) => (
-                          <div key={userId} className="flex justify-between text-sm bg-green-50 dark:bg-green-950/20 rounded-lg p-2">
+                          <div key={userId} className="flex flex-col sm:flex-row sm:justify-between text-xs sm:text-sm bg-green-50 dark:bg-green-950/20 rounded-lg p-2 gap-2">
                             <span className="flex items-center gap-2">
-                              <Avatar className="h-5 w-5">
+                              <Avatar className="h-4 w-4 sm:h-5 sm:w-5">
                                 <AvatarImage src={profiles[userId]?.avatar_url} />
                                 <AvatarFallback className="text-xs">
                                   {profiles[userId]?.name ? getInitials(profiles[userId].name) : '?'}
@@ -460,10 +463,10 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
                   
                   {Object.keys(balance.owes).length === 0 && Object.keys(balance.isOwed).length === 0 && (
                     <div className="text-center py-4">
-                      <div className="w-12 h-12 bg-green-100 dark:bg-green-950/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <span className="text-green-600 text-lg">✓</span>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 dark:bg-green-950/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <span className="text-green-600 text-base sm:text-lg">✓</span>
                       </div>
-                      <p className="text-muted-foreground text-sm">All settled up!</p>
+                      <p className="text-muted-foreground text-xs sm:text-sm">All settled up!</p>
                     </div>
                   )}
                 </CardContent>
@@ -474,26 +477,26 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth }: BalanceDashbo
       </Card>
 
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Payment</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">Confirm Payment</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex justify-between items-center">
-              <span>Amount to Pay:</span>
-              <span className="text-lg font-bold">৳{selectedPayment?.amount.toFixed(2)}</span>
+              <span className="text-sm sm:text-base">Amount to Pay:</span>
+              <span className="text-base sm:text-lg font-bold">৳{selectedPayment?.amount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span>To:</span>
-              <span className="font-medium">
+              <span className="text-sm sm:text-base">To:</span>
+              <span className="font-medium text-sm sm:text-base">
                 {selectedPayment ? (profiles[selectedPayment.toUserId]?.name || profiles[selectedPayment.toUserId]?.email || 'Unknown User') : ''}
               </span>
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+            <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4">
+              <Button variant="outline" onClick={() => setShowPaymentDialog(false)} className="h-10 sm:h-9">
                 Cancel
               </Button>
-              <Button onClick={handlePayment}>
+              <Button onClick={handlePayment} className="h-10 sm:h-9">
                 Confirm Payment
               </Button>
             </div>

@@ -61,45 +61,45 @@ export const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-3 sm:px-4 py-4">
       <Card className="w-full max-w-md shadow-2xl border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
             Reset Password
           </CardTitle>
-          <CardDescription className="text-base">
+          <CardDescription className="text-sm sm:text-base">
             Enter your new password below
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <form onSubmit={handleResetPassword} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
+              <Label htmlFor="password" className="text-sm font-medium">New Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                 required
                 minLength={6}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                 required
                 minLength={6}
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl" 
+              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl h-11 sm:h-10" 
               disabled={loading}
             >
               {loading ? 'Updating...' : 'Reset Password'}

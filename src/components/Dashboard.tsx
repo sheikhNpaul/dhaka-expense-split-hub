@@ -109,13 +109,13 @@ export const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
       {/* Modern Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 md:h-20">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">
                 Expense Tracker
               </h1>
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 Welcome back, {profile?.name || user?.email}!
               </p>
             </div>
@@ -125,10 +125,10 @@ export const Dashboard = () => {
                 <Button
                   onClick={() => setShowAddExpense(true)}
                   size="sm"
-                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl flex items-center gap-1 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add Expense</span>
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline text-xs sm:text-sm">Add Expense</span>
                 </Button>
               )}
               
@@ -138,10 +138,10 @@ export const Dashboard = () => {
                 variant="outline"
                 onClick={signOut}
                 size="sm"
-                className="hover:bg-destructive hover:text-destructive-foreground transition-all flex items-center gap-2"
+                className="hover:bg-destructive hover:text-destructive-foreground transition-all flex items-center gap-1 sm:gap-2 h-9 sm:h-10 px-2 sm:px-3"
               >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline">Sign Out</span>
+                <LogOut className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden md:inline text-xs sm:text-sm">Sign Out</span>
               </Button>
             </div>
           </div>
@@ -149,38 +149,38 @@ export const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
+      <main className="container mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/50 backdrop-blur-sm p-1 rounded-xl h-12 sm:h-auto">
             <TabsTrigger 
               value="homes" 
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
+              className="flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg text-xs sm:text-sm h-10 sm:h-auto px-2 sm:px-3"
             >
-              <Home className="h-4 w-4" />
+              <Home className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Homes</span>
             </TabsTrigger>
             <TabsTrigger 
               value="expenses" 
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
+              className="flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50 text-xs sm:text-sm h-10 sm:h-auto px-2 sm:px-3"
               disabled={!currentHomeId}
             >
-              <Receipt className="h-4 w-4" />
+              <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Expenses</span>
             </TabsTrigger>
             <TabsTrigger 
               value="balances"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
+              className="flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50 text-xs sm:text-sm h-10 sm:h-auto px-2 sm:px-3"
               disabled={!currentHomeId}
             >
-              <TrendingUp className="h-4 w-4" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Balances</span>
             </TabsTrigger>
             <TabsTrigger 
               value="payments"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
+              className="flex items-center justify-center gap-1 sm:gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50 text-xs sm:text-sm h-10 sm:h-auto px-2 sm:px-3"
               disabled={!currentHomeId}
             >
-              <Receipt className="h-4 w-4" />
+              <Receipt className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Payments</span>
             </TabsTrigger>
           </TabsList>
@@ -207,24 +207,24 @@ export const Dashboard = () => {
               <>
                 <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
                   <CardHeader className="pb-4">
-                    <CardTitle className="flex items-center justify-between gap-2 text-lg md:text-xl">
-                      <div className="flex items-center gap-4">
+                    <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-lg md:text-xl">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         <Receipt className="h-5 w-5 text-primary" />
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleMonthChange('prev')}
-                            className="h-8 w-8"
+                            className="h-10 w-10 sm:h-8 sm:w-8"
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </Button>
-                          <span>{format(selectedMonth, 'MMMM yyyy')}</span>
+                          <span className="text-sm sm:text-base font-medium">{format(selectedMonth, 'MMMM yyyy')}</span>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleMonthChange('next')}
-                            className="h-8 w-8"
+                            className="h-10 w-10 sm:h-8 sm:w-8"
                           >
                             <ChevronRight className="h-4 w-4" />
                           </Button>
@@ -233,7 +233,7 @@ export const Dashboard = () => {
                       <Button
                         onClick={() => setShowAddExpense(true)}
                         size="sm"
-                        className="ml-auto"
+                        className="w-full sm:w-auto h-10 sm:h-9"
                       >
                         <Plus className="h-4 w-4 mr-1" />
                         Add Expense
@@ -263,7 +263,7 @@ export const Dashboard = () => {
           
           <TabsContent value="balances" className="space-y-6">
             {currentHomeId ? (
-              <BalanceDashboard currentHomeId={currentHomeId} selectedMonth={selectedMonth} />
+              <BalanceDashboard currentHomeId={currentHomeId} selectedMonth={selectedMonth} refreshTrigger={refreshTrigger} />
             ) : (
               <Card>
                 <CardContent className="text-center py-8">
@@ -297,7 +297,6 @@ export const Dashboard = () => {
           onClose={() => setShowAddExpense(false)}
           onExpenseAdded={handleExpenseAdded}
           currentHomeId={currentHomeId}
-          defaultDate={selectedMonth}
         />
       )}
 

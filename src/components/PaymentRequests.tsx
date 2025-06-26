@@ -148,14 +148,14 @@ export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selected
   return (
     <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-4">
-            <span>Payment Requests</span>
-            <div className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <span className="text-lg sm:text-xl">Payment Requests</span>
+            <div className="text-xs sm:text-sm text-muted-foreground">
               {selectedMonth ? format(selectedMonth, 'MMMM yyyy') : 'All Time'}
             </div>
           </CardTitle>
-          <Badge variant="outline" className="ml-2">
+          <Badge variant="outline" className="text-xs sm:text-sm">
             {requests.length} request{requests.length !== 1 ? 's' : ''}
           </Badge>
         </div>
@@ -170,24 +170,24 @@ export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selected
             <p className="text-muted-foreground">No payment requests</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {requests.map((request) => (
               <Card key={request.id} className="hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={request.from_user.avatar_url} />
-                          <AvatarFallback>
+                          <AvatarFallback className="text-xs">
                             {getInitials(request.from_user.name || request.from_user.email)}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="font-medium">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate">
                             {request.from_user.name || request.from_user.email}
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             wants to pay
                           </p>
                         </div>
@@ -195,12 +195,12 @@ export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selected
                       <div className="flex items-center gap-2 ml-10">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={request.to_user.avatar_url} />
-                          <AvatarFallback>
+                          <AvatarFallback className="text-xs">
                             {getInitials(request.to_user.name || request.to_user.email)}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="font-medium">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate">
                             {request.to_user.name || request.to_user.email}
                           </p>
                           <p className="text-xs text-muted-foreground">
@@ -209,8 +209,8 @@ export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selected
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-green-600">
+                    <div className="text-right sm:text-left">
+                      <p className="text-xl sm:text-2xl font-bold text-green-600">
                         ৳{request.amount.toFixed(2)}
                       </p>
                       <Badge 
@@ -221,23 +221,26 @@ export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selected
                             ? 'destructive' 
                             : 'outline'
                         }
+                        className="text-xs mt-1"
                       >
                         {request.status}
                       </Badge>
                     </div>
                   </div>
                   {user?.id === request.to_user_id && request.status === 'pending' && (
-                    <div className="flex justify-end gap-2 mt-4">
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleUpdateRequest(request.id, 'rejected')}
+                        className="h-10 sm:h-9"
                       >
                         Reject
                       </Button>
                       <Button
                         size="sm"
                         onClick={() => handleUpdateRequest(request.id, 'approved')}
+                        className="h-10 sm:h-9"
                       >
                         Approve
                       </Button>

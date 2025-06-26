@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -47,18 +46,18 @@ export const ForgotPassword = () => {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-600 hover:underline py-2"
         >
           Forgot your password?
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Reset Password</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleForgotPassword} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="reset-email">Email</Label>
+            <Label htmlFor="reset-email" className="text-sm font-medium">Email</Label>
             <Input
               id="reset-email"
               type="email"
@@ -66,9 +65,10 @@ export const ForgotPassword = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
               required
+              className="h-11 sm:h-10"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full h-11 sm:h-10" disabled={loading}>
             {loading ? 'Sending...' : 'Send Reset Link'}
           </Button>
         </form>

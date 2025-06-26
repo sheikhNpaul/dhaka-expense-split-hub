@@ -192,29 +192,30 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Edit Expense</CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <Card className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <CardTitle className="text-lg sm:text-xl">Edit Expense</CardTitle>
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-10 w-10 sm:h-8 sm:w-8">
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-4 sm:px-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title" className="text-sm font-medium">Title</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="e.g., Groceries, Utilities"
                 required
+                className="h-11 sm:h-10"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount (BDT)</Label>
+              <Label htmlFor="amount" className="text-sm font-medium">Amount (BDT)</Label>
               <Input
                 id="amount"
                 type="number"
@@ -223,35 +224,38 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
                 onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
                 placeholder="0.00"
                 required
+                className="h-11 sm:h-10"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description" className="text-sm font-medium">Description (Optional)</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Additional details..."
+                className="min-h-[80px] sm:min-h-[60px]"
               />
             </div>
 
             <div className="space-y-3">
-              <Label className="flex items-center gap-2">
+              <Label className="flex items-center gap-2 text-sm font-medium">
                 <Users className="h-4 w-4" />
                 Split with home members
               </Label>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
+              <div className="space-y-3 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
                 {homeMembers.map(member => (
-                  <div key={member.user_id} className="flex items-center space-x-2">
+                  <div key={member.user_id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                     <Checkbox
                       id={member.user_id}
                       checked={formData.selectedParticipants.includes(member.user_id)}
                       onCheckedChange={() => handleParticipantToggle(member.user_id)}
+                      className="h-5 w-5 sm:h-4 sm:w-4"
                     />
                     <Label 
                       htmlFor={member.user_id} 
-                      className="flex-1 cursor-pointer"
+                      className="flex-1 cursor-pointer text-sm"
                     >
                       {member.profile.name || member.profile.email}
                       {member.user_id === user?.id && " (You)"}
@@ -259,13 +263,13 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Selected: {formData.selectedParticipants.length} member{formData.selectedParticipants.length !== 1 ? 's' : ''}
               </p>
             </div>
 
-            <div className="flex space-x-2">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-11 sm:h-10">
                 Cancel
               </Button>
               <Button 
@@ -273,11 +277,11 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
                 variant="destructive" 
                 onClick={handleDelete} 
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 h-11 sm:h-10"
               >
                 {loading ? 'Deleting...' : 'Delete'}
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1">
+              <Button type="submit" disabled={loading} className="flex-1 h-11 sm:h-10">
                 {loading ? 'Updating...' : 'Update'}
               </Button>
             </div>

@@ -120,20 +120,20 @@ export const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-3 sm:px-4 py-4">
       <Card className="w-full max-w-md shadow-2xl border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-2xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </CardTitle>
-          <CardDescription className="text-base">
+          <CardDescription className="text-sm sm:text-base">
             {isSignUp 
               ? 'Join your roommates and start tracking expenses together'
               : 'Sign in to your expense tracker account'
             }
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <form onSubmit={handleAuth} className="space-y-5">
             {isSignUp && (
               <div className="space-y-2">
@@ -143,7 +143,7 @@ export const Auth = () => {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="transition-all focus:ring-2 focus:ring-primary/20"
+                  className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                   required
                 />
               </div>
@@ -157,7 +157,7 @@ export const Auth = () => {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Choose a unique username"
-                  className="transition-all focus:ring-2 focus:ring-primary/20"
+                  className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                   required
                 />
               </div>
@@ -172,7 +172,7 @@ export const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={isSignUp ? "Enter your email" : "Enter your email or username"}
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                 required
               />
             </div>
@@ -183,13 +183,13 @@ export const Auth = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                 required
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl" 
+              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl h-11 sm:h-10" 
               disabled={loading}
             >
               {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
@@ -206,7 +206,7 @@ export const Auth = () => {
             <button
               type="button"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-primary hover:text-primary/80 transition-colors hover:underline"
+              className="text-sm text-primary hover:text-primary/80 transition-colors hover:underline py-2"
             >
               {isSignUp 
                 ? 'Already have an account? Sign in'

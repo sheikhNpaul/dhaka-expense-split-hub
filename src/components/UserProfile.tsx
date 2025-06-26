@@ -189,39 +189,39 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:scale-105 transition-transform">
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+        <Button variant="ghost" className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:scale-105 transition-transform">
+          <Avatar className="h-9 w-9 sm:h-10 sm:w-10 ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
             <AvatarImage src={profile?.avatar_url} alt={profile?.name || 'User'} />
             <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-              {profile?.name ? getInitials(profile.name) : <User className="h-5 w-5" />}
+              {profile?.name ? getInitials(profile.name) : <User className="h-4 w-4 sm:h-5 sm:w-5" />}
             </AvatarFallback>
           </Avatar>
           <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1">
-            <Edit className="h-3 w-3" />
+            <Edit className="h-2 w-2 sm:h-3 sm:w-3" />
           </div>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
             Profile Settings
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             Update your profile information and preferences
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleUpdateProfile} className="space-y-6">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <Avatar className="h-24 w-24 ring-4 ring-primary/20">
+              <Avatar className="h-20 w-20 sm:h-24 sm:w-24 ring-4 ring-primary/20">
                 <AvatarImage src={currentProfile?.avatar_url} alt={currentProfile?.name || 'User'} />
-                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-2xl">
-                  {currentProfile?.name ? getInitials(currentProfile.name) : <User className="h-10 w-10" />}
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground text-xl sm:text-2xl">
+                  {currentProfile?.name ? getInitials(currentProfile.name) : <User className="h-8 w-8 sm:h-10 sm:w-10" />}
                 </AvatarFallback>
               </Avatar>
               <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 hover:bg-primary/90 cursor-pointer transition-colors">
-                <Upload className="h-4 w-4" />
+                <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
                 <input
                   id="avatar-upload"
                   type="file"
@@ -233,75 +233,75 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
               </label>
             </div>
             {uploadingAvatar && (
-              <div className="text-sm text-muted-foreground">Uploading...</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Uploading...</div>
             )}
           </div>
           
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Display Name</Label>
+              <Label htmlFor="name" className="text-sm font-medium">Display Name</Label>
               <Input
                 id="name"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-sm font-medium">Username</Label>
               <Input
                 id="username"
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 placeholder="Choose a unique username"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password (optional)</Label>
+              <Label htmlFor="newPassword" className="text-sm font-medium">New Password (optional)</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={formData.newPassword}
                 onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
                 placeholder="Leave blank to keep current password"
-                className="transition-all focus:ring-2 focus:ring-primary/20"
+                className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
               />
             </div>
             
             {formData.newPassword && (
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                   required
-                  className="transition-all focus:ring-2 focus:ring-primary/20"
+                  className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
                 />
               </div>
             )}
           </div>
           
-          <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all" disabled={loading || uploadingAvatar}>
+          <Button type="submit" className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all h-11 sm:h-10" disabled={loading || uploadingAvatar}>
             {loading ? 'Updating...' : 'Update Profile'}
           </Button>
         </form>
