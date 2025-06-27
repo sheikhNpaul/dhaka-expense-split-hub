@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ForgotPassword } from './ForgotPassword';
-import { isEmailInUse, isValidEmail, isValidPassword } from '@/lib/auth';
+import { isValidEmail, isValidPassword } from '@/lib/auth';
 
 export const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -33,14 +33,8 @@ export const Auth = () => {
           throw new Error('Password must be at least 6 characters long.');
         }
 
-        // Check if email is already in use
-        const emailExists = await isEmailInUse(email);
-        if (emailExists) {
-          throw new Error('This email is already registered. Please use a different email or sign in.');
-        }
-
-        // Create user profile
-        const { error: signUpError } = await supabase.auth.signUp({
+        // Create user account
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -53,55 +47,64 @@ export const Auth = () => {
 
         if (signUpError) throw signUpError;
 
-        // Create profile record
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: (await supabase.auth.getUser()).data.user?.id,
-              name: name,
-              username: username,
-              email: email,
-            },
-          ]);
-
-        if (profileError) throw profileError;
-
-        toast({
-          title: "Success!",
-          description: "Check your email for the confirmation link.",
-        });
+        // Check if signup was successful
+        if (data.user) {
+          toast({
+            title: "Success!",
+            description: "Check your email for the confirmation link.",
+          });
+        } else {
+          throw new Error('Signup failed. Please try again.');
+        }
       } else {
-        // Sign in logic
+        // Sign in logic with better error handling
         let signInError = null;
         
-        if (email.includes('@')) {
-          // Try email sign in
-          const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          signInError = error;
-        } else {
-          // Try username sign in
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('username', email)
-            .maybeSingle();
-          
-          if (!profileError && profileData?.email) {
+        try {
+          if (email.includes('@')) {
+            // Try email sign in
             const { error } = await supabase.auth.signInWithPassword({
-              email: profileData.email,
+              email,
               password,
             });
             signInError = error;
           } else {
-            signInError = new Error('Invalid username or password');
+            // Try username sign in
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('username', email)
+              .maybeSingle();
+            
+            if (!profileError && profileData?.email) {
+              const { error } = await supabase.auth.signInWithPassword({
+                email: profileData.email,
+                password,
+              });
+              signInError = error;
+            } else {
+              signInError = new Error('Invalid username or password');
+            }
+          }
+        } catch (captchaError: any) {
+          // Handle CAPTCHA-specific errors
+          if (captchaError.message?.includes('captcha') || captchaError.message?.includes('verification')) {
+            signInError = new Error('Please try again in a few moments. If the problem persists, try refreshing the page or using a different browser.');
+          } else {
+            signInError = captchaError;
           }
         }
         
-        if (signInError) throw signInError;
+        if (signInError) {
+          // Provide more helpful error messages
+          let errorMessage = signInError.message;
+          if (signInError.message?.includes('captcha') || signInError.message?.includes('verification')) {
+            errorMessage = 'Sign-in temporarily blocked. Please wait a moment and try again, or refresh the page.';
+          } else if (signInError.message?.includes('Invalid login credentials')) {
+            errorMessage = 'Invalid email/username or password. Please check your credentials and try again.';
+          }
+          throw new Error(errorMessage);
+        }
         
         toast({
           title: "Welcome back!",
@@ -109,9 +112,10 @@ export const Auth = () => {
         });
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {

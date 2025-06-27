@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { config } from '@/lib/config';
 
 export const ForgotPassword = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,8 +18,12 @@ export const ForgotPassword = () => {
     setLoading(true);
 
     try {
+      // Use configuration for redirect URL
+      const redirectUrl = config.getAuthRedirectUrl();
+      console.log('Password reset redirect URL:', redirectUrl);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: redirectUrl,
       });
 
       if (error) throw error;
@@ -31,9 +36,10 @@ export const ForgotPassword = () => {
       setIsOpen(false);
       setEmail('');
     } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to send password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {

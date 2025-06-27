@@ -4,6 +4,32 @@
 
 **URL**: https://lovable.dev/projects/33950bc8-b9da-4d74-8179-2af7c13f5af8
 
+## Environment Setup
+
+This project requires environment variables for Supabase configuration. Follow these steps to set up your environment:
+
+### 1. Create Environment File
+Create a `.env` file in the root directory with the following variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
+
+### 2. Get Supabase Credentials
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Go to **Settings** → **API**
+4. Copy the **Project URL** and **anon public** key
+5. Paste them in your `.env` file
+
+### 3. Production Deployment
+When deploying to production (Netlify, Vercel, etc.), make sure to:
+1. Add the environment variables in your hosting platform's settings
+2. Update the redirect URLs in your Supabase project:
+   - Go to **Authentication** → **URL Configuration**
+   - Add your production domain URLs to the **Redirect URLs** list
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
