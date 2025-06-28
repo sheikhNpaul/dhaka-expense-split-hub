@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, ChevronLeft, ChevronRight, Utensils, Users, Plus, Minus } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
+import { Calendar, ChevronLeft, ChevronRight, Utensils, Users, Plus, Minus, CalendarDays, TrendingUp } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isSameWeek } from 'date-fns';
 
 interface MealOrder {
   id: string;
@@ -40,12 +40,9 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<'calendar' | 'summary'>('calendar');
   const calendarRef = useRef<HTMLDivElement>(null);
-
-  // Minimum swipe distance (in px)
-  const minSwipeDistance = 50;
 
   useEffect(() => {
     if (user && currentHomeId) {
@@ -53,30 +50,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
       fetchProfiles();
     }
   }, [user, currentHomeId, currentMonth, refreshTrigger]);
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe) {
-      handleMonthChange('next');
-    }
-    if (isRightSwipe) {
-      handleMonthChange('prev');
-    }
-  };
 
   const fetchMealOrders = async () => {
     if (!user || !currentHomeId) return;
@@ -141,7 +114,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     try {
       if (existingOrder) {
         if (newCount === 0) {
-          // Delete the order if count is 0
           const { error } = await supabase
             .from('meal_orders')
             .delete()
@@ -149,7 +121,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
 
           if (error) throw error;
         } else {
-          // Update existing order
           const { error } = await supabase
             .from('meal_orders')
             .update({ meal_count: newCount, updated_at: new Date().toISOString() })
@@ -158,7 +129,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
           if (error) throw error;
         }
       } else if (newCount > 0) {
-        // Create new order
         const { error } = await supabase
           .from('meal_orders')
           .insert({
@@ -171,7 +141,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
         if (error) throw error;
       }
 
-      // Refresh meal orders
       fetchMealOrders();
     } catch (error: any) {
       console.error('Error updating meal order:', error);
@@ -218,50 +187,73 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     mealOrders.some(order => order.user_id === profile.id)
   );
 
+  const selectedDateMeals = selectedDate ? getMealCountForDate(selectedDate, user?.id || '') : 0;
+  const selectedDateTotal = selectedDate ? getTotalMealsForDate(selectedDate) : 0;
+
   return (
     <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
       <CardHeader className="pb-4">
-        <div className="flex flex-col gap-4">
-          {/* Header with title and month navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Meal Planner
             </CardTitle>
-            
-            {/* Month navigation with larger touch targets */}
-            <div className="flex items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleMonthChange('prev')}
-                className="h-12 w-12 sm:h-10 sm:w-10 touch-manipulation"
-                aria-label="Previous month"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <span className="text-base sm:text-lg font-semibold min-w-[120px] text-center">
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {format(currentMonth, 'MMMM yyyy')}
               </span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleMonthChange('next')}
-                className="h-12 w-12 sm:h-10 sm:w-10 touch-manipulation"
-                aria-label="Next month"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
             </div>
           </div>
           
-          {/* Member count */}
-          <div className="text-sm text-muted-foreground text-center sm:text-left">
-            {homeMembers.length} member{homeMembers.length !== 1 ? 's' : ''} planning meals
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className="h-9 px-3"
+            >
+              <CalendarDays className="h-4 w-4 mr-1" />
+              Calendar
+            </Button>
+            <Button
+              variant={viewMode === 'summary' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('summary')}
+              className="h-9 px-3"
+            >
+              <TrendingUp className="h-4 w-4 mr-1" />
+              Summary
+            </Button>
           </div>
+        </div>
+        
+        {/* Month Navigation */}
+        <div className="flex items-center justify-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleMonthChange('prev')}
+            className="h-10 w-10 p-0"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <h2 className="text-lg font-semibold text-center flex-1">
+            {format(currentMonth, 'MMMM yyyy')}
+          </h2>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleMonthChange('next')}
+            className="h-10 w-10 p-0"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
+      <CardContent>
         {loading ? (
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
@@ -269,24 +261,72 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               <p className="text-muted-foreground">Loading meal planner...</p>
             </div>
           </div>
-        ) : (
-          <div 
-            ref={calendarRef}
-            className="space-y-6"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-          >
-            {/* Swipe hint for mobile */}
-            <div className="text-xs text-muted-foreground text-center sm:hidden">
-              💡 Swipe left/right to change months
-            </div>
+        ) : viewMode === 'calendar' ? (
+          <div className="space-y-6">
+            {/* Selected Date Controls */}
+            {selectedDate && (
+              <Card className="border-0 bg-gradient-to-br from-background to-background/80 backdrop-blur shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">
+                        {format(selectedDate, 'EEEE, MMMM d')}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedDateTotal} total meals planned
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedDate(null)}
+                      className="h-8 w-8 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Your meals</p>
+                        <p className="text-2xl font-bold text-primary">{selectedDateMeals}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Total</p>
+                        <p className="text-2xl font-bold">{selectedDateTotal}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleMealCountChange(selectedDate, selectedDateMeals - 1)}
+                        disabled={selectedDateMeals === 0 || updating === format(selectedDate, 'yyyy-MM-dd')}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleMealCountChange(selectedDate, selectedDateMeals + 1)}
+                        disabled={updating === format(selectedDate, 'yyyy-MM-dd')}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Calendar Grid - Mobile Optimized */}
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1">
               {/* Day headers */}
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground p-2 sm:p-3">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
                   {day}
                 </div>
               ))}
@@ -295,138 +335,113 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               {calendarDays.map(day => {
                 const totalMeals = getTotalMealsForDate(day);
                 const userMeals = getMealCountForDate(day, user?.id || '');
-                const isToday = isSameDay(day, new Date());
                 const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isSelected = selectedDate && isSameDay(day, selectedDate);
                 
                 return (
-                  <div
+                  <button
                     key={day.toISOString()}
+                    onClick={() => setSelectedDate(day)}
+                    disabled={!isCurrentMonth}
                     className={`
-                      min-h-[100px] sm:min-h-[120px] p-2 sm:p-3 border rounded-lg relative
-                      ${isToday ? 'ring-2 ring-primary bg-primary/5' : 'bg-muted/30'}
-                      ${!isCurrentMonth ? 'opacity-50' : ''}
+                      aspect-square p-2 rounded-lg border-2 transition-all duration-200
+                      ${isSelected 
+                        ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
+                        : 'border-transparent hover:border-primary/30 hover:bg-primary/5'
+                      }
+                      ${isToday(day) ? 'ring-2 ring-primary/50' : ''}
+                      ${!isCurrentMonth ? 'opacity-30' : ''}
                       ${updating === format(day, 'yyyy-MM-dd') ? 'animate-pulse' : ''}
-                      hover:bg-muted/50 transition-colors
+                      focus:outline-none focus:ring-2 focus:ring-primary/50
                     `}
                   >
-                    {/* Date number */}
-                    <div className="text-sm sm:text-base font-semibold mb-2 text-center">
+                    <div className="text-sm font-medium mb-1">
                       {format(day, 'd')}
                     </div>
                     
-                    {/* Total meals for the day */}
                     {totalMeals > 0 && (
-                      <div className="flex items-center justify-center gap-1 mb-3">
-                        <Utensils className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-bold text-primary">{totalMeals}</span>
-                      </div>
-                    )}
-                    
-                    {/* User's meal count */}
-                    {userMeals > 0 && (
-                      <div className="flex justify-center mb-3">
-                        <Badge variant="secondary" className="text-xs px-2 py-1">
-                          You: {userMeals}
+                      <div className="flex items-center justify-center">
+                        <Badge variant="secondary" className="text-xs px-1 py-0.5">
+                          {totalMeals}
                         </Badge>
                       </div>
                     )}
                     
-                    {/* Meal count controls - Larger touch targets */}
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleMealCountChange(day, userMeals + 1)}
-                        disabled={updating === format(day, 'yyyy-MM-dd')}
-                        className="h-10 w-full touch-manipulation flex items-center justify-center gap-1"
-                      >
-                        <Plus className="h-4 w-4" />
-                        <span className="text-sm font-medium">Add</span>
-                      </Button>
-                      {userMeals > 0 && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleMealCountChange(day, userMeals - 1)}
-                          disabled={updating === format(day, 'yyyy-MM-dd')}
-                          className="h-10 w-full touch-manipulation flex items-center justify-center gap-1"
-                        >
-                          <Minus className="h-4 w-4" />
-                          <span className="text-sm font-medium">Remove</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                    {userMeals > 0 && (
+                      <div className="flex items-center justify-center mt-1">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      </div>
+                    )}
+                  </button>
                 );
               })}
             </div>
+          </div>
+        ) : (
+          /* Summary View */
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="border-0 bg-gradient-to-br from-green-500/10 to-green-600/10 backdrop-blur shadow-lg">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {mealOrders.filter(order => order.user_id === user?.id).reduce((sum, order) => sum + order.meal_count, 0)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Your meals</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 bg-gradient-to-br from-blue-500/10 to-blue-600/10 backdrop-blur shadow-lg">
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {mealOrders.reduce((sum, order) => sum + order.meal_count, 0)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">Total meals</p>
+                </CardContent>
+              </Card>
+            </div>
 
-            {/* Member Summary - Mobile Optimized */}
+            {/* Member Summary */}
             {homeMembers.length > 0 && (
-              <div className="mt-8">
-                <h3 className="text-lg sm:text-xl font-semibold mb-4 flex items-center gap-2 justify-center sm:justify-start">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Member Meal Summary
+                  Member Summary
                 </h3>
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-4">
                   {homeMembers.map(member => {
                     const memberOrders = mealOrders.filter(order => order.user_id === member.id);
                     const totalMeals = memberOrders.reduce((sum, order) => sum + order.meal_count, 0);
                     const averageMeals = memberOrders.length > 0 ? (totalMeals / memberOrders.length).toFixed(1) : '0';
                     
                     return (
-                      <Card key={member.id} className="p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12 sm:h-10 sm:w-10">
-                            <AvatarImage src={member.avatar_url} />
-                            <AvatarFallback className="text-sm">
-                              {getInitials(member.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-base sm:text-sm truncate">{member.name}</p>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-sm text-muted-foreground mt-1">
-                              <span className="flex items-center gap-1">
-                                <Utensils className="h-3 w-3" />
-                                Total: {totalMeals}
-                              </span>
-                              <span>Avg: {averageMeals}/day</span>
+                      <Card key={member.id} className="border-0 bg-gradient-to-br from-background to-background/80 backdrop-blur shadow-lg">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-12 w-12">
+                              <AvatarImage src={member.avatar_url} />
+                              <AvatarFallback className="text-sm">
+                                {getInitials(member.name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{member.name}</p>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                <span className="flex items-center gap-1">
+                                  <Utensils className="h-3 w-3" />
+                                  {totalMeals} meals
+                                </span>
+                                <span>Avg: {averageMeals}/day</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        </CardContent>
                       </Card>
                     );
                   })}
                 </div>
               </div>
             )}
-
-            {/* Instructions - Mobile Optimized */}
-            <div className="mt-8 p-4 sm:p-6 bg-muted/30 rounded-lg">
-              <h4 className="font-semibold mb-3 text-center sm:text-left">How to use:</h4>
-              <ul className="text-sm sm:text-base text-muted-foreground space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Tap "Add" to add a meal for a specific day</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Tap "Remove" to remove a meal</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>The total meals for each day are shown with the utensils icon</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Your meal count is shown with a badge</span>
-                </li>
-                <li className="flex items-start gap-2 sm:hidden">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Swipe left/right on the calendar to change months</span>
-                </li>
-              </ul>
-            </div>
           </div>
         )}
       </CardContent>

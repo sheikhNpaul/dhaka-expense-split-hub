@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,25 @@ const benefits = [
 
 const HomePage = () => {
   const navigate = useNavigate();
+
+  // Check for password reset parameters and redirect if found
+  useEffect(() => {
+    const hash = window.location.hash;
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // Check for password recovery parameters
+    const hasRecoveryParams = hash.includes('type=recovery') || 
+                             hash.includes('access_token') || 
+                             hash.includes('refresh_token') ||
+                             searchParams.has('access_token') || 
+                             searchParams.has('refresh_token');
+    
+    if (hasRecoveryParams) {
+      // Redirect to reset password page with the same parameters
+      const resetUrl = `/reset-password${window.location.search}${window.location.hash}`;
+      navigate(resetUrl, { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">

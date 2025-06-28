@@ -56,7 +56,8 @@ export default function ResetPassword() {
           hasRecoveryParams,
           hasSearchParams,
           hash: hash.substring(0, 50) + '...',
-          searchParams: window.location.search
+          searchParams: window.location.search,
+          fullUrl: window.location.href
         });
         
         if (session || hasRecoveryParams || hasSearchParams) {

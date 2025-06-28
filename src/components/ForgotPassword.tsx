@@ -19,7 +19,7 @@ export const ForgotPassword = () => {
 
     try {
       // Use configuration for redirect URL
-      const redirectUrl = config.getAuthRedirectUrl();
+      const redirectUrl = `${config.getBaseUrl()}/reset-password`;
       console.log('Password reset redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
