@@ -53,7 +53,7 @@ export const Dashboard = () => {
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(location.search);
     params.set('tab', value);
-    navigate(`/?${params.toString()}`);
+    navigate(`/app?${params.toString()}`);
   };
 
   const fetchProfile = async () => {
