@@ -11,6 +11,7 @@ import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 
 export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [validSession, setValidSession] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -61,21 +62,41 @@ export default function ResetPassword() {
           pathname: window.location.pathname
         });
         
+        // If we have recovery parameters, we should set valid session to true
+        // even if there's no active session yet, as Supabase will handle the recovery
         if (session || hasRecoveryParams || hasSearchParams) {
           setValidSession(true);
+          setSessionLoading(false);
+          
+          // If we have recovery params but no session, try to set the session
+          if ((hasRecoveryParams || hasSearchParams) && !session) {
+            console.log('Attempting to set session from recovery parameters');
+            
+            // Wait a bit for Supabase to process the tokens
+            setTimeout(async () => {
+              const { data: { session: newSession } } = await supabase.auth.getSession();
+              if (newSession) {
+                console.log('Session established after delay');
+                setValidSession(true);
+              }
+              setSessionLoading(false);
+            }, 1000);
+          }
         } else {
           // Listen for auth state changes
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             console.log('Auth state change:', event, !!session);
-            if (event === 'PASSWORD_RECOVERY' || session) {
+            if (event === 'PASSWORD_RECOVERY' || event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || session) {
               setValidSession(true);
             }
+            setSessionLoading(false);
           });
 
           return () => subscription.unsubscribe();
         }
       } catch (error) {
         console.error('Error checking session:', error);
+        setSessionLoading(false);
       }
     };
 
@@ -95,6 +116,44 @@ export default function ResetPassword() {
       // Validate password strength
       if (!isValidPassword(password)) {
         throw new Error("Password must be at least 6 characters long and contain at least one number and one letter");
+      }
+
+      // Get current session to ensure we have one
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Try to get session from URL parameters
+        const hash = window.location.hash;
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        console.log('No session found, checking URL parameters:', {
+          hash,
+          searchParams: window.location.search,
+          hasAccessToken: urlParams.has('access_token'),
+          hasRefreshToken: urlParams.has('refresh_token')
+        });
+        
+        // If we have tokens in URL, we need to set the session first
+        if (hash.includes('access_token') || urlParams.has('access_token')) {
+          // Extract tokens from URL and set session
+          const accessToken = urlParams.get('access_token') || 
+                             hash.match(/access_token=([^&]+)/)?.[1];
+          const refreshToken = urlParams.get('refresh_token') || 
+                              hash.match(/refresh_token=([^&]+)/)?.[1];
+          
+          if (accessToken) {
+            console.log('Setting session from URL tokens');
+            const { error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || ''
+            });
+            
+            if (setSessionError) {
+              console.error('Error setting session:', setSessionError);
+              throw new Error('Invalid or expired reset link. Please request a new one.');
+            }
+          }
+        }
       }
 
       // Update the user's password
@@ -123,6 +182,26 @@ export default function ResetPassword() {
   };
 
   const allChecksPassed = Object.values(passwordChecks).every(check => check);
+
+  if (sessionLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 px-4 py-4">
+        <Card className="w-full max-w-md shadow-2xl border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-xl sm:text-2xl bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Verifying Reset Link
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Please wait while we verify your password reset link...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!validSession) {
     return (

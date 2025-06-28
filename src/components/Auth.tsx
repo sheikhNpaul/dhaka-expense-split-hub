@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { ForgotPassword } from './ForgotPassword';
 import { isValidEmail, isValidPassword } from '@/lib/auth';
+import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface AuthProps {
   initialMode?: 'signup' | 'signin' | null;
@@ -19,6 +20,8 @@ export const Auth = ({ initialMode }: AuthProps) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,6 +31,51 @@ export const Auth = ({ initialMode }: AuthProps) => {
       setIsSignUp(false);
     }
   }, [initialMode]);
+
+  // Check username availability
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setUsernameChecking(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', username.toLowerCase())
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      // If no data found, username is available
+      setUsernameAvailable(!data);
+    } catch (error) {
+      console.error('Error checking username:', error);
+      setUsernameAvailable(null);
+    } finally {
+      setUsernameChecking(false);
+    }
+  };
+
+  // Debounced username check
+  useEffect(() => {
+    if (!isSignUp) return;
+    
+    const timeoutId = setTimeout(() => {
+      checkUsernameAvailability(username);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [username, isSignUp]);
+
+  // Reset username availability when switching modes
+  const handleModeToggle = () => {
+    setIsSignUp(!isSignUp);
+    setUsernameAvailable(null);
+    setUsernameChecking(false);
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +93,26 @@ export const Auth = ({ initialMode }: AuthProps) => {
           throw new Error('Password must be at least 6 characters long.');
         }
 
+        // Check if username is available
+        if (usernameAvailable === false) {
+          throw new Error('Username is already taken. Please choose a different one.');
+        }
+
+        // Check if email already exists
+        const { data: existingUser, error: checkError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('email', email.toLowerCase())
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Error checking existing user:', checkError);
+        }
+
+        if (existingUser) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
+
         // Create user account
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -52,12 +120,18 @@ export const Auth = ({ initialMode }: AuthProps) => {
           options: {
             data: {
               name: name,
-              username: username,
+              username: username.toLowerCase(),
             },
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          // Handle specific Supabase errors
+          if (signUpError.message?.includes('already registered')) {
+            throw new Error('An account with this email already exists. Please sign in instead.');
+          }
+          throw signUpError;
+        }
 
         // Check if signup was successful
         if (data.user) {
@@ -167,15 +241,41 @@ export const Auth = ({ initialMode }: AuthProps) => {
             {isSignUp && (
               <div className="space-y-2">
                 <Label htmlFor="username" className="text-sm font-medium">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Choose a unique username"
-                  className="transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a unique username"
+                    className={`transition-all focus:ring-2 focus:ring-primary/20 h-11 sm:h-10 pr-10 ${
+                      usernameAvailable === true ? 'border-green-500 focus:ring-green-500/20' :
+                      usernameAvailable === false ? 'border-red-500 focus:ring-red-500/20' : ''
+                    }`}
+                    required
+                  />
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    {usernameChecking ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : usernameAvailable === true ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : usernameAvailable === false ? (
+                      <XCircle className="h-4 w-4 text-red-500" />
+                    ) : null}
+                  </div>
+                </div>
+                {username && username.length >= 3 && (
+                  <p className={`text-xs ${
+                    usernameAvailable === true ? 'text-green-600' :
+                    usernameAvailable === false ? 'text-red-600' :
+                    'text-muted-foreground'
+                  }`}>
+                    {usernameChecking ? 'Checking availability...' :
+                     usernameAvailable === true ? 'Username is available!' :
+                     usernameAvailable === false ? 'Username is already taken' :
+                     'Enter at least 3 characters'}
+                  </p>
+                )}
               </div>
             )}
             <div className="space-y-2">
@@ -206,7 +306,7 @@ export const Auth = ({ initialMode }: AuthProps) => {
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl h-11 sm:h-10" 
-              disabled={loading}
+              disabled={loading || (isSignUp && usernameAvailable === false)}
             >
               {loading ? 'Loading...' : (isSignUp ? 'Create Account' : 'Sign In')}
             </Button>
@@ -221,7 +321,7 @@ export const Auth = ({ initialMode }: AuthProps) => {
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={handleModeToggle}
               className="text-sm text-primary hover:text-primary/80 transition-colors hover:underline py-2"
             >
               {isSignUp 
