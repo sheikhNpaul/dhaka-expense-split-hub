@@ -24,9 +24,9 @@ export const AuthGuard = ({ children, requireAuth = true }: AuthGuardProps) => {
 
       // For other routes, handle normal auth flow
       if (requireAuth && !user) {
-        navigate('/');
-      } else if (!requireAuth && user && location.pathname === '/') {
-        navigate('/dashboard');
+        navigate('/app');
+      } else if (!requireAuth && user && location.pathname === '/app') {
+        navigate('/app');
       }
     }
   }, [user, loading, navigate, location.pathname, requireAuth]);

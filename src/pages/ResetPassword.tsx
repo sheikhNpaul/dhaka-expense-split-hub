@@ -107,7 +107,7 @@ export default function ResetPassword() {
 
       // Sign out and redirect to login
       await supabase.auth.signOut();
-      navigate('/', { replace: true });
+      navigate('/app', { replace: true });
     } catch (error: any) {
       console.error('Password reset error:', error);
       toast({
@@ -136,7 +136,7 @@ export default function ResetPassword() {
           </CardHeader>
           <CardContent className="flex justify-center">
             <Button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/app')}
               className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl"
             >
               Return to Login

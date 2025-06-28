@@ -23,7 +23,7 @@ export const ResetPassword = () => {
         description: "Please request a new password reset link.",
         variant: "destructive",
       });
-      navigate('/');
+      navigate('/app');
     }
   }, [navigate, toast]);
 
@@ -48,7 +48,7 @@ export const ResetPassword = () => {
       });
 
       // Redirect to sign in page
-      navigate('/');
+      navigate('/app');
     } catch (error: any) {
       toast({
         title: "Error",

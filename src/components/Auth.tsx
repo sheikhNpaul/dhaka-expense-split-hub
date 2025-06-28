@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,11 @@ import { useToast } from '@/hooks/use-toast';
 import { ForgotPassword } from './ForgotPassword';
 import { isValidEmail, isValidPassword } from '@/lib/auth';
 
-export const Auth = () => {
+interface AuthProps {
+  initialMode?: 'signup' | 'signin' | null;
+}
+
+export const Auth = ({ initialMode }: AuthProps) => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -16,6 +20,14 @@ export const Auth = () => {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (initialMode === 'signup') {
+      setIsSignUp(true);
+    } else if (initialMode === 'signin') {
+      setIsSignUp(false);
+    }
+  }, [initialMode]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
