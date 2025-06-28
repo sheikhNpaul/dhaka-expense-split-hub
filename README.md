@@ -1,8 +1,24 @@
-# Welcome to your Lovable project
+# SplitIt - Smart Expense Tracking
 
-## Project info
+A modern expense tracking and splitting application built for roommates, friends, and groups to manage shared expenses efficiently.
 
-**URL**: https://lovable.dev/projects/33950bc8-b9da-4d74-8179-2af7c13f5af8
+## Features
+
+- **Smart Expense Tracking**: Monitor daily spending with intelligent categorization
+- **Group Expense Splitting**: Easily split bills with roommates, friends, and family
+- **Visual Analytics**: Get detailed insights into spending patterns with interactive charts
+- **Real-time Sync**: Access your expenses across all devices instantly
+- **Secure & Private**: Enterprise-grade security for your financial data
+- **Mobile Optimized**: Full-featured mobile experience for tracking on the go
+
+## Tech Stack
+
+- **Frontend**: React 18 with TypeScript
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **Backend**: Supabase (PostgreSQL + Auth + Real-time)
+- **Build Tool**: Vite
+- **State Management**: TanStack Query
+- **Routing**: React Router DOM
 
 ## Environment Setup
 
@@ -30,70 +46,58 @@ When deploying to production (Netlify, Vercel, etc.), make sure to:
    - Go to **Authentication** → **URL Configuration**
    - Add your production domain URLs to the **Redirect URLs** list
 
-## How can I edit this code?
+## Getting Started
 
-There are several ways of editing your application.
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
 
-**Use Lovable**
+### Installation
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/33950bc8-b9da-4d74-8179-2af7c13f5af8) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd dhaka-expense-split-hub
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run build:dev` - Build for development
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/     # Reusable UI components
+├── pages/         # Page components
+├── hooks/         # Custom React hooks
+├── lib/           # Utility functions and configurations
+├── integrations/  # External service integrations
+└── ui/            # shadcn/ui components
+```
 
-This project is built with:
+## Contributing
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## How can I deploy this project?
+## License
 
-Simply open [Lovable](https://lovable.dev/projects/33950bc8-b9da-4d74-8179-2af7c13f5af8) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.
