@@ -24,18 +24,21 @@ import {
 import Logo from '../common/Logo';
 import Navbar from '../common/Navbar';
 import Footer from '../common/Footer';
-import AnimatedBackground from '../common/AnimatedBackground';
+import AnimatedBackground from './AnimatedBackground'; // Make sure this is the black/white version
 
-// Create theme and export it separately
 export const theme = createTheme({
     palette: {
         mode: 'dark',
         primary: {
-            main: '#6C63FF'
+            main: '#fff'
         },
         background: {
-            default: '#0A1929',
-            paper: '#132F4C'
+            default: '#000',
+            paper: '#181818'
+        },
+        text: {
+            primary: '#fff',
+            secondary: '#bbb'
         }
     },
     typography: {
@@ -43,7 +46,8 @@ export const theme = createTheme({
         h1: {
             fontSize: '3.5rem',
             fontWeight: 700,
-            lineHeight: 1.2
+            lineHeight: 1.2,
+            color: '#fff'
         }
     },
     components: {
@@ -53,37 +57,38 @@ export const theme = createTheme({
                     borderRadius: '8px',
                     padding: '12px 24px',
                     fontSize: '1rem',
-                    textTransform: 'none'
+                    textTransform: 'none',
+                    color: '#fff',
+                    borderColor: '#fff'
                 }
             }
         }
     }
 });
 
+// Black & white animated background
 const GlowingBackground = styled(Box)(() => ({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    background: `radial-gradient(circle at 50% 50%, 
-        #6C63FF20 0%, 
-        #0A192980 50%, 
-        #0A1929 100%)`,
+    background: `radial-gradient(circle at 50% 50%, #fff1 0%, #222 80%, #000 100%)`,
     zIndex: 0
 }));
 
 const FeatureCard = styled(Card)(() => ({
-    background: 'rgba(108, 99, 255, 0.1)',
+    background: 'rgba(255,255,255,0.04)',
     backdropFilter: 'blur(10px)',
     borderRadius: '16px',
-    border: '1px solid rgba(108, 99, 255, 0.2)',
+    border: '1px solid rgba(255,255,255,0.12)',
     transition: 'all 0.3s ease-in-out',
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    color: '#fff',
     '&:hover': {
         transform: 'translateY(-5px)',
         boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-        border: '1px solid rgba(108, 99, 255, 0.5)',
+        border: '1px solid rgba(255,255,255,0.3)',
     }
 }));
 
@@ -154,8 +159,11 @@ const HomePage = () => {
             <Box sx={{ 
                 minHeight: '100vh',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                background: '#000',
+                color: '#fff'
             }}>
+                <GlowingBackground />
                 <AnimatedBackground />
                 <Navbar />
                 
@@ -180,7 +188,7 @@ const HomePage = () => {
                                 fontWeight: 700,
                                 mb: 3,
                                 position: 'relative',
-                                background: 'linear-gradient(45deg, #6C63FF, #FF6584)',
+                                background: 'linear-gradient(45deg, #fff, #bbb)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
                                 filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.5))',
@@ -205,7 +213,7 @@ const HomePage = () => {
                                     mb: 4,
                                     maxWidth: '800px',
                                     mx: 'auto',
-                                    background: 'linear-gradient(45deg, #fff, rgba(108, 99, 255, 0.7))',
+                                    background: 'linear-gradient(45deg, #fff, #888)',
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
                                     filter: 'drop-shadow(1px 1px 2px rgba(0,0,0,0.3))',
