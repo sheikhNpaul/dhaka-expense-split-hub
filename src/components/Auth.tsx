@@ -122,6 +122,7 @@ export const Auth = ({ initialMode }: AuthProps) => {
               name: name,
               username: username.toLowerCase(),
             },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
 
