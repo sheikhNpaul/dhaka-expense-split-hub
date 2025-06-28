@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -52,13 +52,8 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
   
   const [joinCode, setJoinCode] = useState('');
 
-  useEffect(() => {
-    if (user) {
-      fetchUserHomes();
-    }
-  }, [user, currentHomeId]);
-
-  const fetchUserHomes = async () => {
+  // Fix: useCallback for fetchUserHomes to avoid missing dependency warning
+  const fetchUserHomes = useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -94,7 +89,14 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         fetchHomeMembers(home.id);
       });
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserHomes();
+    }
+  }, [user, currentHomeId, fetchUserHomes]);
+  // ^^^ Fix: add fetchUserHomes to dependency array
 
   const fetchHomeMembers = async (homeId: string) => {
     try {
@@ -215,10 +217,15 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       setShowCreateForm(false);
       fetchUserHomes();
       onHomeSelected(homeData.id);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // Fix: Remove 'any' type, use 'unknown' and check for Error
+      let message = 'Unknown error';
+      if (error instanceof Error) {
+        message = error.message;
+      }
       toast({
         title: "Error",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -291,10 +298,15 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       setShowJoinForm(false);
       fetchUserHomes();
       onHomeSelected(homeData.id);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // Fix: Remove 'any' type, use 'unknown' and check for Error
+      let message = 'Unknown error';
+      if (error instanceof Error) {
+        message = error.message;
+      }
       toast({
         title: "Error",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
