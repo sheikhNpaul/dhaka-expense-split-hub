@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, ChevronLeft, ChevronRight, Utensils, Users, Plus, Minus, CalendarDays, TrendingUp } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isSameWeek } from 'date-fns';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'; // adjust import as per your modal/dialog component
 
 interface MealOrder {
   id: string;
@@ -42,24 +44,20 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
   const [updating, setUpdating] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'summary'>('calendar');
+  const [showMealModal, setShowMealModal] = useState(false);
+  const [modalDate, setModalDate] = useState<Date | null>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (user && currentHomeId) {
-      fetchMealOrders();
-      fetchProfiles();
-    }
-  }, [user, currentHomeId, currentMonth, refreshTrigger]);
-
-  const fetchMealOrders = async () => {
+  // Fix: useCallback for fetchMealOrders to avoid missing dependency warning
+  const fetchMealOrders = useCallback(async () => {
     if (!user || !currentHomeId) return;
 
     try {
       setLoading(true);
-      
+
       const monthStart = startOfMonth(currentMonth);
       const monthEnd = endOfMonth(currentMonth);
-      
+
       const { data, error } = await supabase
         .from('meal_orders')
         .select('*')
@@ -81,7 +79,15 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, currentHomeId, currentMonth, toast]);
+
+  useEffect(() => {
+    if (user && currentHomeId) {
+      fetchMealOrders();
+      fetchProfiles();
+    }
+  }, [user, currentHomeId, currentMonth, refreshTrigger, fetchMealOrders]);
+  // ^^^ Fix: add fetchMealOrders to dependency array
 
   const fetchProfiles = async () => {
     const { data, error } = await supabase
@@ -142,11 +148,16 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
       }
 
       fetchMealOrders();
-    } catch (error: any) {
+    } catch (error) {
+      // Fix: Remove 'any' type, use 'unknown' and check for Error
+      let message = 'Unknown error';
+      if (error instanceof Error) {
+        message = error.message;
+      }
       console.error('Error updating meal order:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -341,7 +352,10 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                 return (
                   <button
                     key={day.toISOString()}
-                    onClick={() => setSelectedDate(day)}
+                    onClick={() => {
+                      setModalDate(day);
+                      setShowMealModal(true);
+                    }}
                     disabled={!isCurrentMonth}
                     className={`
                       aspect-square p-2 rounded-lg border-2 transition-all duration-200
@@ -367,9 +381,10 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                       </div>
                     )}
                     
+                    {/* Green dot if user has meal for this day */}
                     {userMeals > 0 && (
                       <div className="flex items-center justify-center mt-1">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full border border-white shadow" />
                       </div>
                     )}
                   </button>
@@ -445,6 +460,73 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
           </div>
         )}
       </CardContent>
+
+      {/* Modal for meal editing */}
+      <Dialog open={showMealModal} onOpenChange={setShowMealModal}>
+        <DialogContent
+          className="max-w-xs w-full rounded-2xl p-4 bg-white dark:bg-zinc-900 shadow-2xl animate-[fadeInScale_0.25s_ease]"
+          style={{ minWidth: 0 }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold mb-2">
+              {modalDate ? format(modalDate, 'EEE, MMM d') : ''}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-2 my-2">
+            <span className="text-xs text-muted-foreground">Your meals</span>
+            <div className="flex items-center gap-4">
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => modalDate && handleMealCountChange(modalDate, getMealCountForDate(modalDate, user?.id || '') - 1)}
+                disabled={!modalDate || getMealCountForDate(modalDate, user?.id || '') === 0 || updating === format(modalDate, 'yyyy-MM-dd')}
+                className="h-12 w-12 rounded-full text-lg"
+              >
+                <Minus className="h-6 w-6" />
+              </Button>
+              <span className="text-4xl font-extrabold text-primary transition-all duration-200">
+                {modalDate ? getMealCountForDate(modalDate, user?.id || '') : 0}
+              </span>
+              <Button
+                size="icon"
+                onClick={() => modalDate && handleMealCountChange(modalDate, getMealCountForDate(modalDate, user?.id || '') + 1)}
+                disabled={!modalDate || updating === format(modalDate, 'yyyy-MM-dd')}
+                className="h-12 w-12 rounded-full text-lg"
+              >
+                <Plus className="h-6 w-6" />
+              </Button>
+            </div>
+            {/* Progress bar/indicator */}
+            <div className="w-full mt-2">
+              <div className="h-2 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                <div
+                  className="h-2 bg-primary transition-all duration-300"
+                  style={{
+                    width: `${
+                      Math.min(
+                        ((modalDate ? getMealCountForDate(modalDate, user?.id || '') : 0) / 10) * 100,
+                        100
+                      )
+                    }%`,
+                  }}
+                />
+              </div>
+            </div>
+            <span className="text-xs text-muted-foreground mt-1">
+              {modalDate ? getTotalMealsForDate(modalDate) : 0} total meals for this day
+            </span>
+          </div>
+          <DialogFooter className="flex justify-center mt-4">
+            <Button
+              variant="secondary"
+              className="w-full rounded-xl py-2 text-base"
+              onClick={() => setShowMealModal(false)}
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
-}; 
+};
