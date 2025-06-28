@@ -21,6 +21,9 @@ const App: React.FC = () => (
           <Route path="/" element={<HomePage />} />
           <Route path="/app" element={<Index />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/reset-password/*" element={<ResetPassword />} />
+          <Route path="/auth/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/reset-password/*" element={<ResetPassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

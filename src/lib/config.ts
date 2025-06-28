@@ -9,10 +9,14 @@ export const config = {
     if (typeof window !== 'undefined') {
       return window.location.origin;
     }
-    // Fallback for SSR
+    // Fallback for SSR - use environment variable if available
+    const envUrl = import.meta.env.VITE_APP_URL;
+    if (envUrl) {
+      return envUrl;
+    }
     return process.env.NODE_ENV === 'development' 
       ? 'http://localhost:8080' 
-      : 'https://isplit.netlify.app'; // Remove trailing slash
+      : 'https://isplit.netlify.app';
   },
   
   // Auth redirect URLs
