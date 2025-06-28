@@ -198,10 +198,24 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
             <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Meal Planner
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                {format(currentMonth, 'MMMM yyyy')}
-              </span>
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleMonthChange('prev')}
+                className="h-10 w-10 sm:h-8 sm:w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm sm:text-base font-medium">{format(currentMonth, 'MMMM yyyy')}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleMonthChange('next')}
+                className="h-10 w-10 sm:h-8 sm:w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </div>
           
@@ -225,31 +239,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               Summary
             </Button>
           </div>
-        </div>
-        
-        {/* Month Navigation */}
-        <div className="flex items-center justify-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleMonthChange('prev')}
-            className="h-10 w-10 p-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <h2 className="text-lg font-semibold text-center flex-1">
-            {format(currentMonth, 'MMMM yyyy')}
-          </h2>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleMonthChange('next')}
-            className="h-10 w-10 p-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
       </CardHeader>
       
