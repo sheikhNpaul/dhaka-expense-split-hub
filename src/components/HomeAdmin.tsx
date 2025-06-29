@@ -13,7 +13,20 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { Shield, UserX, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Shield, 
+  UserX, 
+  Trash2, 
+  Users, 
+  Crown, 
+  User, 
+  Settings,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
+} from 'lucide-react';
 import { AdminTransfer } from './AdminTransfer';
 
 interface HomeMember {
@@ -72,19 +85,24 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
 
   const handleDeleteHome = async () => {
     try {
-      // First, delete all expense comments for this home
-      const { error: commentsError } = await supabase
-        .from('expense_comments')
-        .delete()
-        .eq('expense_id', (await supabase
-          .from('expenses')
-          .select('id')
-          .eq('home_id', homeId)
-        ).data?.map(e => e.id) || []);
+      // First, get all expense IDs for this home
+      const { data: expenses } = await supabase
+        .from('expenses')
+        .select('id')
+        .eq('home_id', homeId);
 
-      if (commentsError) {
-        console.error('Error deleting comments:', commentsError);
-        // Continue with deletion even if comments fail
+      // Delete all expense comments for this home
+      if (expenses && expenses.length > 0) {
+        const expenseIds = expenses.map(e => e.id);
+        const { error: commentsError } = await supabase
+          .from('expense_comments')
+          .delete()
+          .in('expense_id', expenseIds);
+
+        if (commentsError) {
+          console.error('Error deleting comments:', commentsError);
+          // Continue with deletion even if comments fail
+        }
       }
 
       // Delete all expenses for this home
@@ -171,124 +189,240 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
 
   if (!currentUserIsAdmin) {
     return (
-      <div className="mt-4">
-        <h4 className="text-sm font-medium mb-2">Members:</h4>
-        <div className="space-y-2">
-          {members.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/50"
-            >
-              <div className="flex items-center gap-2">
-                <span>{member.profile.name}</span>
+      <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <Users className="h-5 w-5 text-muted-foreground" />
+            Members ({members.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3">
+            {members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{member.profile.name}</p>
+                    <p className="text-xs text-muted-foreground">{member.profile.email}</p>
+                  </div>
+                </div>
                 {member.is_admin && (
-                  <Shield className="h-3 w-3 text-primary" />
+                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                    <Crown className="h-3 w-3 mr-1" />
+                    Admin
+                  </Badge>
                 )}
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="mt-4">
-      <h4 className="text-sm font-medium mb-2">Manage Members:</h4>
-      
-      <div className="space-y-2">
-        {members.map((member) => (
-          <div
-            key={member.id}
-            className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/50"
-          >
-            <div className="flex items-center gap-2">
-              <span>{member.profile.name}</span>
-              {member.is_admin && (
-                <Shield className="h-3 w-3 text-primary" />
-              )}
+    <div className="space-y-6">
+      {/* Members Management */}
+      <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <Shield className="h-4 w-4 text-white" />
             </div>
-            {currentUserId !== member.user_id && (
-              <div className="flex items-center gap-2">
-                {!member.is_admin && currentUserIsAdmin && (
-                  <AdminTransfer
-                    homeId={homeId}
-                    member={member}
-                    onTransferComplete={onMembershipChange}
-                  />
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRemovingMember(member)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <UserX className="h-4 w-4" />
-                </Button>
+            Manage Members ({members.length})
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="grid gap-4">
+            {members.map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/50 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{member.profile.name}</p>
+                    <p className="text-xs text-muted-foreground">{member.profile.email}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {member.is_admin && (
+                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Admin
+                    </Badge>
+                  )}
+                  
+                  {currentUserId !== member.user_id && (
+                    <div className="flex items-center gap-2">
+                      {!member.is_admin && currentUserIsAdmin && (
+                        <AdminTransfer
+                          homeId={homeId}
+                          member={member}
+                          onTransferComplete={onMembershipChange}
+                        />
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRemovingMember(member)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <UserX className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        ))}
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Delete Home Section */}
-      <div className="mt-6 pt-4 border-t border-border">
-        <h4 className="text-sm font-medium mb-3 text-destructive">Danger Zone</h4>
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => setShowDeleteHomeDialog(true)}
-          className="flex items-center gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          Delete Home
-        </Button>
-        <p className="text-xs text-muted-foreground mt-2">
-          This will permanently delete the home and all associated expenses, payments, and member data.
-        </p>
-      </div>
+      {/* Danger Zone */}
+      <Card className="border-0 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 backdrop-blur shadow-lg">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-bold flex items-center gap-2 text-destructive">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+              <AlertTriangle className="h-4 w-4 text-white" />
+            </div>
+            Danger Zone
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-4">
+            <div className="p-4 bg-red-100/50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+              <div className="flex items-start gap-3">
+                <Trash2 className="h-5 w-5 text-red-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-red-900 dark:text-red-100 mb-1">Delete Home</h4>
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                    This will permanently delete "{homeName}" and all associated data including expenses, payments, and member records.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteHomeDialog(true)}
+                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Home
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
+      {/* Remove Member Dialog */}
       <AlertDialog open={!!removingMember} onOpenChange={() => setRemovingMember(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove Member</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove {removingMember?.profile.name} from this home?
-              This action cannot be undone.
-            </AlertDialogDescription>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                <UserX className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-xl font-bold">Remove Member</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-muted-foreground">
+                  Are you sure you want to remove this member?
+                </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          
+          {removingMember && (
+            <div className="p-4 bg-muted/50 rounded-xl mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium">{removingMember.profile.name}</p>
+                  <p className="text-sm text-muted-foreground">{removingMember.profile.email}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-3">
+            <AlertDialogCancel className="h-10 border-2 hover:bg-muted/50">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemoveMember}
-              className="bg-destructive hover:bg-destructive/90"
+              className="h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
             >
+              <UserX className="h-4 w-4 mr-2" />
               Remove Member
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Delete Home Dialog */}
       <AlertDialog open={showDeleteHomeDialog} onOpenChange={setShowDeleteHomeDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Home</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{homeName}"? This action will permanently remove:
-              <br /><br />
-              • All expenses and payment records<br />
-              • All member associations<br />
-              • All balance calculations<br />
-              • The home itself<br /><br />
-              This action cannot be undone.
-            </AlertDialogDescription>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-xl font-bold">Delete Home</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-muted-foreground">
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </div>
+            </div>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          
+          <div className="space-y-4 mb-6">
+            <div className="p-4 bg-red-100/50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+              <h4 className="font-semibold text-red-900 dark:text-red-100 mb-2">"{homeName}" will be permanently deleted</h4>
+              <div className="space-y-2 text-sm text-red-700 dark:text-red-300">
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  All expenses and payment records
+                </div>
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  All member associations
+                </div>
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  All balance calculations
+                </div>
+                <div className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  The home itself
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-3">
+            <AlertDialogCancel className="h-10 border-2 hover:bg-muted/50">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteHome}
-              className="bg-destructive hover:bg-destructive/90"
+              className="h-10 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
             >
+              <Trash2 className="h-4 w-4 mr-2" />
               Delete Home
             </AlertDialogAction>
           </AlertDialogFooter>

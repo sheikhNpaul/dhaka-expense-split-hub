@@ -7,6 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Home, 
   Plus, 
@@ -22,7 +29,12 @@ import {
   ArrowRight,
   Crown,
   User,
-  MoreHorizontal
+  MoreHorizontal,
+  Shield,
+  UserX,
+  Trash2,
+  Edit,
+  Share
 } from 'lucide-react';
 import { HomeAdmin } from './HomeAdmin';
 
@@ -571,13 +583,39 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                     </Badge>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Home
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => copyHomeCode(home.home_code)}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Code
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Share className="h-4 w-4 mr-2" />
+                      Share Home
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardHeader>
             
@@ -654,13 +692,32 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                     Switch to This Home
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-10 px-3 hover:bg-muted/50"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 px-3 hover:bg-muted/50"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Users className="h-4 w-4 mr-2" />
+                      Manage Members
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="cursor-pointer text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Home
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               {/* Admin Section */}
