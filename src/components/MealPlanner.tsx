@@ -10,6 +10,8 @@ import { Calendar, ChevronLeft, ChevronRight, Utensils, Users, Plus, Minus, Cale
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isSameWeek } from 'date-fns';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'; // adjust import as per your modal/dialog component
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface MealOrder {
   id: string;
@@ -32,9 +34,10 @@ interface MealPlannerProps {
   currentHomeId: string;
   selectedMonth: Date;
   refreshTrigger?: number;
+  onMonthChange?: (month: Date) => void;
 }
 
-export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: MealPlannerProps) => {
+export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger, onMonthChange }: MealPlannerProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [mealOrders, setMealOrders] = useState<MealOrder[]>([]);
@@ -196,6 +199,13 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
   const selectedDateMeals = selectedDate ? getMealCountForDate(selectedDate, user?.id || '') : 0;
   const selectedDateTotal = selectedDate ? getTotalMealsForDate(selectedDate) : 0;
 
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+    if (onMonthChange) {
+      const newMonth = direction === 'prev' ? subMonths(selectedMonth, 1) : addMonths(selectedMonth, 1);
+      onMonthChange(newMonth);
+    }
+  };
+
   return (
     <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
       <CardHeader className="pb-4">
@@ -204,8 +214,29 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
             <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Meal Planner
             </CardTitle>
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="text-sm sm:text-base font-medium min-w-[100px] text-center">{format(selectedMonth, 'MMMM yyyy')}</span>
+            <div className="flex items-center justify-center sm:justify-start space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleMonthChange('prev')}
+                className="h-12 w-12 p-0 rounded-xl"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center space-x-3 min-w-0 bg-muted/50 rounded-xl px-4 py-2">
+                <Calendar className="h-5 w-5 flex-shrink-0" />
+                <span className="font-semibold text-base sm:text-lg truncate">
+                  {format(selectedMonth, 'MMMM yyyy')}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleMonthChange('next')}
+                className="h-12 w-12 p-0 rounded-xl"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
           </div>
           

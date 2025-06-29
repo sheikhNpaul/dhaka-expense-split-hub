@@ -198,7 +198,11 @@ export const Dashboard = () => {
                 Plan and track shared meals
               </p>
             </div>
-            <MealPlanner currentHomeId={currentHomeId} selectedMonth={selectedMonth} />
+            <MealPlanner 
+              currentHomeId={currentHomeId} 
+              selectedMonth={selectedMonth} 
+              onMonthChange={setSelectedMonth}
+            />
           </div>
         );
 
