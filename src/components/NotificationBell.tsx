@@ -188,12 +188,13 @@ export const NotificationBell = () => {
       );
       
       console.log('Sending database update for notification:', notificationId);
+      
+      // Simplified update without the problematic constraint
       const { data, error } = await (supabase as any)
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId)
         .eq('user_id', user?.id) // Add user_id check for security
-        .eq('read', false) // Only update if not already read
         .select();
 
       if (error) {
