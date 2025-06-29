@@ -37,7 +37,6 @@ interface MealPlannerProps {
 export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: MealPlannerProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [currentMonth, setCurrentMonth] = useState(selectedMonth);
   const [mealOrders, setMealOrders] = useState<MealOrder[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
@@ -55,8 +54,8 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     try {
       setLoading(true);
 
-      const monthStart = startOfMonth(currentMonth);
-      const monthEnd = endOfMonth(currentMonth);
+      const monthStart = startOfMonth(selectedMonth);
+      const monthEnd = endOfMonth(selectedMonth);
 
       const { data, error } = await supabase
         .from('meal_orders')
@@ -79,14 +78,14 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     } finally {
       setLoading(false);
     }
-  }, [user, currentHomeId, currentMonth, toast]);
+  }, [user, currentHomeId, selectedMonth, toast]);
 
   useEffect(() => {
     if (user && currentHomeId) {
       fetchMealOrders();
       fetchProfiles();
     }
-  }, [user, currentHomeId, currentMonth, refreshTrigger, fetchMealOrders]);
+  }, [user, currentHomeId, selectedMonth, refreshTrigger, fetchMealOrders]);
   // ^^^ Fix: add fetchMealOrders to dependency array
 
   const fetchProfiles = async () => {
@@ -101,10 +100,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
       }, {} as Record<string, Profile>);
       setProfiles(profileMap);
     }
-  };
-
-  const handleMonthChange = (direction: 'prev' | 'next') => {
-    setCurrentMonth(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
   };
 
   const handleMealCountChange = async (date: Date, newCount: number) => {
@@ -190,8 +185,8 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
   };
 
   const calendarDays = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
+    start: startOfMonth(selectedMonth),
+    end: endOfMonth(selectedMonth),
   });
 
   const homeMembers = Object.values(profiles).filter(profile => 
@@ -210,23 +205,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               Meal Planner
             </CardTitle>
             <div className="flex items-center justify-center sm:justify-start gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleMonthChange('prev')}
-                className="h-10 w-10 sm:h-8 sm:w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm sm:text-base font-medium min-w-[100px] text-center">{format(currentMonth, 'MMMM yyyy')}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleMonthChange('next')}
-                className="h-10 w-10 sm:h-8 sm:w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <span className="text-sm sm:text-base font-medium min-w-[100px] text-center">{format(selectedMonth, 'MMMM yyyy')}</span>
             </div>
           </div>
           
@@ -335,7 +314,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               {calendarDays.map(day => {
                 const totalMeals = getTotalMealsForDate(day);
                 const userMeals = getMealCountForDate(day, user?.id || '');
-                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isCurrentMonth = isSameMonth(day, selectedMonth);
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
                 
                 return (
