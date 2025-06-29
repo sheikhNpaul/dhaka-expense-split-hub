@@ -206,7 +206,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Meal Planner
             </CardTitle>
             <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -218,7 +218,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm sm:text-base font-medium">{format(currentMonth, 'MMMM yyyy')}</span>
+              <span className="text-sm sm:text-base font-medium min-w-[100px] text-center">{format(currentMonth, 'MMMM yyyy')}</span>
               <Button
                 variant="ghost"
                 size="icon"
@@ -235,18 +235,18 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               variant={viewMode === 'calendar' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('calendar')}
-              className="h-9 px-3"
+              className="h-9 px-2 sm:px-3 text-xs sm:text-sm"
             >
-              <CalendarDays className="h-4 w-4 mr-1" />
+              <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               Calendar
             </Button>
             <Button
               variant={viewMode === 'summary' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('summary')}
-              className="h-9 px-3"
+              className="h-9 px-2 sm:px-3 text-xs sm:text-sm"
             >
-              <TrendingUp className="h-4 w-4 mr-1" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               Summary
             </Button>
           </div>
@@ -266,13 +266,13 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
             {/* Selected Date Controls */}
             {selectedDate && (
               <Card className="border-0 bg-gradient-to-br from-background to-background/80 backdrop-blur shadow-lg">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold truncate">
                         {format(selectedDate, 'EEEE, MMMM d')}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {selectedDateTotal} total meals planned
                       </p>
                     </div>
@@ -280,25 +280,25 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedDate(null)}
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 ml-2 flex-shrink-0"
                     >
                       ×
                     </Button>
                   </div>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Your meals</p>
-                        <p className="text-2xl font-bold text-primary">{selectedDateMeals}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Your meals</p>
+                        <p className="text-xl sm:text-2xl font-bold text-primary">{selectedDateMeals}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Total</p>
-                        <p className="text-2xl font-bold">{selectedDateTotal}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
+                        <p className="text-xl sm:text-2xl font-bold">{selectedDateTotal}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 justify-center sm:justify-end">
                       <Button
                         size="sm"
                         variant="outline"
@@ -323,10 +323,10 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
             )}
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Day headers */}
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
+                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1 sm:p-2">
                   {day}
                 </div>
               ))}
@@ -347,7 +347,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                     }}
                     disabled={!isCurrentMonth}
                     className={`
-                      aspect-square p-2 rounded-lg border-2 transition-all duration-200
+                      min-h-[3rem] sm:aspect-square p-1 sm:p-2 rounded-lg border-2 transition-all duration-200
                       ${isSelected 
                         ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
                         : 'border-transparent hover:border-primary/30 hover:bg-primary/5'
@@ -358,13 +358,13 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                       focus:outline-none focus:ring-2 focus:ring-primary/50
                     `}
                   >
-                    <div className="text-sm font-medium mb-1">
+                    <div className="text-xs sm:text-sm font-medium mb-1">
                       {format(day, 'd')}
                     </div>
                     
                     {totalMeals > 0 && (
                       <div className="flex items-center justify-center">
-                        <Badge variant="secondary" className="text-xs px-1 py-0.5">
+                        <Badge variant="secondary" className="text-xs px-1 py-0.5 min-w-[1.5rem]">
                           {totalMeals}
                         </Badge>
                       </div>
@@ -373,7 +373,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                     {/* Green dot if user has meal for this day */}
                     {userMeals > 0 && (
                       <div className="flex items-center justify-center mt-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full border border-white shadow" />
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full border border-white shadow" />
                       </div>
                     )}
                   </button>
