@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Calendar, Clock, Filter } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -8,7 +8,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,27 +20,21 @@ interface Notification {
   created_at: string;
 }
 
-type DateFilter = 'all' | 'today' | 'week' | 'month';
-
 export const NotificationBell = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
 
-  const unreadCount = allNotifications.filter(n => !n.read).length;
-  const filteredNotifications = notifications;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      fetchAllNotifications();
       // Add a test notification if none exist
       addTestNotification();
     }
-  }, [user, dateFilter]);
+  }, [user]);
 
   // Set up real-time subscription for notifications
   useEffect(() => {
@@ -60,7 +53,6 @@ export const NotificationBell = () => {
         () => {
           // Refresh notifications when there are changes
           fetchNotifications();
-          fetchAllNotifications();
         }
       )
       .subscribe();
@@ -70,71 +62,19 @@ export const NotificationBell = () => {
     };
   }, [user]);
 
-  const fetchAllNotifications = async () => {
-    if (!user) return;
-    
-    try {
-      console.log('Fetching all notifications for user:', user.id);
-      
-      const { data, error } = await (supabase as any)
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching all notifications:', error);
-        console.error('Error details:', error.message, error.details, error.hint);
-        return;
-      }
-      
-      console.log('Fetched all notifications:', data?.length || 0, 'notifications');
-      const unreadCount = data?.filter((n: any) => !n.read).length || 0;
-      console.log('Unread count:', unreadCount);
-      
-      setAllNotifications(data || []);
-    } catch (error) {
-      console.error('Error fetching all notifications:', error);
-    }
-  };
-
   const fetchNotifications = async () => {
     if (!user) return;
     
     setLoading(true);
     try {
-      console.log('Fetching notifications for user:', user.id, 'with filter:', dateFilter);
+      console.log('Fetching notifications for user:', user.id);
       
-      let query = (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      // Apply date filter
-      if (dateFilter !== 'all') {
-        const now = new Date();
-        let startDate: Date;
-
-        switch (dateFilter) {
-          case 'today':
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            break;
-          case 'week':
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            break;
-          case 'month':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            break;
-          default:
-            startDate = new Date(0);
-        }
-
-        query = query.gte('created_at', startDate.toISOString());
-        console.log('Applied date filter:', dateFilter, 'from:', startDate.toISOString());
-      }
-
-      const { data, error } = await query.limit(50);
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) {
         console.error('Error fetching notifications:', error);
@@ -210,13 +150,15 @@ export const NotificationBell = () => {
       console.log('Marking notification as read:', notificationId);
       console.log('Current user:', user?.id);
       
+      // Check if notification is already read to prevent unnecessary updates
+      const notification = notifications.find(n => n.id === notificationId);
+      if (notification?.read) {
+        console.log('Notification already read, skipping update');
+        return;
+      }
+      
       // First, update local state immediately for better UX
       setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      );
-      setAllNotifications(prev => 
         prev.map(n => 
           n.id === notificationId ? { ...n, read: true } : n
         )
@@ -227,6 +169,7 @@ export const NotificationBell = () => {
         .update({ read: true })
         .eq('id', notificationId)
         .eq('user_id', user?.id) // Add user_id check for security
+        .eq('read', false) // Only update if not already read
         .select();
 
       if (error) {
@@ -240,7 +183,7 @@ export const NotificationBell = () => {
       // Only refresh if the database update was successful
       if (data && data.length > 0) {
         console.log('Refreshing notifications from database...');
-        await Promise.all([fetchNotifications(), fetchAllNotifications()]);
+        await fetchNotifications();
       } else {
         console.log('No rows updated, notification might not exist or already be read');
       }
@@ -252,6 +195,11 @@ export const NotificationBell = () => {
   const markAllAsRead = async () => {
     try {
       console.log('Marking all notifications as read for user:', user?.id);
+      
+      // Update local state immediately for better UX
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, read: true }))
+      );
       
       const { data, error } = await (supabase as any)
         .from('notifications')
@@ -267,8 +215,8 @@ export const NotificationBell = () => {
 
       console.log('Successfully marked all notifications as read:', data);
       
-      // Refresh both notification lists to get updated data from database
-      await Promise.all([fetchNotifications(), fetchAllNotifications()]);
+      // Refresh notifications to get updated data from database
+      await fetchNotifications();
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -296,20 +244,6 @@ export const NotificationBell = () => {
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
-  };
-
-  const getFilteredNotifications = () => {
-    return filteredNotifications;
-  };
-
-  const getFilterLabel = (filter: DateFilter) => {
-    switch (filter) {
-      case 'all': return 'All';
-      case 'today': return 'Today';
-      case 'week': return 'Week';
-      case 'month': return 'Month';
-      default: return 'All';
-    }
   };
 
   return (
@@ -348,65 +282,52 @@ export const NotificationBell = () => {
           </div>
         </div>
         
-        <Tabs value={dateFilter} onValueChange={(value) => setDateFilter(value as DateFilter)} className="w-full">
-          <div className="px-4 pt-2">
-            <TabsList className="grid w-full grid-cols-4 h-8">
-              <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-              <TabsTrigger value="today" className="text-xs">Today</TabsTrigger>
-              <TabsTrigger value="week" className="text-xs">Week</TabsTrigger>
-              <TabsTrigger value="month" className="text-xs">Month</TabsTrigger>
-            </TabsList>
-          </div>
-          
-          <TabsContent value={dateFilter} className="mt-0">
-            <ScrollArea className="h-80">
-              {loading ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  Loading notifications...
-                </div>
-              ) : getFilteredNotifications().length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  No notifications in {getFilterLabel(dateFilter).toLowerCase()}
-                </div>
-              ) : (
-                <div className="p-2">
-                  {getFilteredNotifications().map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
-                        notification.read 
-                          ? 'bg-muted/50 hover:bg-muted' 
-                          : 'bg-primary/10 hover:bg-primary/20'
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        markAsRead(notification.id);
-                      }}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className="text-lg">{getNotificationIcon(notification.type)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <h5 className={`font-medium text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {notification.title}
-                            </h5>
-                            <span className="text-xs text-muted-foreground">
-                              {formatTime(notification.created_at)}
-                            </span>
-                          </div>
-                          <p className={`text-sm mt-1 ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                            {notification.message}
-                          </p>
-                        </div>
+        <ScrollArea className="h-80">
+          {loading ? (
+            <div className="p-4 text-center text-muted-foreground">
+              Loading notifications...
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground">
+              No notifications yet
+            </div>
+          ) : (
+            <div className="p-2">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
+                    notification.read 
+                      ? 'bg-muted/50 hover:bg-muted' 
+                      : 'bg-primary/10 hover:bg-primary/20'
+                  }`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    markAsRead(notification.id);
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h5 className={`font-medium text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          {notification.title}
+                        </h5>
+                        <span className="text-xs text-muted-foreground">
+                          {formatTime(notification.created_at)}
+                        </span>
                       </div>
+                      <p className={`text-sm mt-1 ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {notification.message}
+                      </p>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
