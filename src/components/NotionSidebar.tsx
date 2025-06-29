@@ -26,13 +26,15 @@ interface NotionSidebarProps {
   onProfileUpdate: () => void;
   onAddExpense: () => void;
   currentHomeId: string | null;
+  onSidebarToggle?: (collapsed: boolean) => void;
 }
 
 export const NotionSidebar = ({ 
   profile, 
   onProfileUpdate, 
   onAddExpense, 
-  currentHomeId 
+  currentHomeId,
+  onSidebarToggle
 }: NotionSidebarProps) => {
   const { signOut } = useAuth();
   const location = useLocation();
@@ -59,6 +61,13 @@ export const NotionSidebar = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Notify parent component of sidebar state changes
+  useEffect(() => {
+    if (onSidebarToggle) {
+      onSidebarToggle(isCollapsed);
+    }
+  }, [isCollapsed, onSidebarToggle]);
+
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(location.search);
     params.set('tab', value);
@@ -67,6 +76,11 @@ export const NotionSidebar = ({
     if (isMobile) {
       setIsMobileMenuOpen(false);
     }
+  };
+
+  const handleCollapseToggle = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
   };
 
   const navigationItems = [
@@ -131,7 +145,7 @@ export const NotionSidebar = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleCollapseToggle}
             className="h-8 w-8 p-0"
           >
             {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
@@ -196,11 +210,13 @@ export const NotionSidebar = ({
       </ScrollArea>
 
       {/* Footer */}
-      <div className={`border-t border-border space-y-4 ${
+      <div className={`border-t border-border ${
         isMobile ? 'p-6' : 'p-4'
       }`}>
         {/* User Profile */}
-        <div className="flex items-center space-x-3">
+        <div className={`flex items-center ${
+          isCollapsed && !isMobile ? 'justify-center mb-4' : 'space-x-3 mb-4'
+        }`}>
           <UserProfile profile={profile} onProfileUpdate={onProfileUpdate} />
           {(isMobile || !isCollapsed) && (
             <div className="flex-1 min-w-0">
@@ -219,9 +235,19 @@ export const NotionSidebar = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-3">
-          <ThemeToggle />
-          <NotificationBell />
+        <div className={`flex items-center ${
+          isCollapsed && !isMobile ? 'justify-center space-y-2 flex-col' : 'space-x-3'
+        }`}>
+          <div className={`${
+            isCollapsed && !isMobile ? 'w-full flex justify-center' : ''
+          }`}>
+            <ThemeToggle />
+          </div>
+          <div className={`${
+            isCollapsed && !isMobile ? 'w-full flex justify-center' : ''
+          }`}>
+            <NotificationBell />
+          </div>
           {(isMobile || !isCollapsed) && (
             <Button
               variant="ghost"
