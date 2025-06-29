@@ -53,7 +53,6 @@ export const NotificationBell = () => {
         },
         () => {
           // Only refresh on new notifications, not updates
-          console.log('New notification received, refreshing...');
           fetchNotifications();
         }
       )
@@ -69,8 +68,6 @@ export const NotificationBell = () => {
     
     setLoading(true);
     try {
-      console.log('Fetching notifications for user:', user.id);
-      
       const { data, error } = await (supabase as any)
         .from('notifications')
         .select('*')
@@ -80,25 +77,9 @@ export const NotificationBell = () => {
 
       if (error) {
         console.error('Error fetching notifications:', error);
-        console.error('Error details:', error.message, error.details, error.hint);
         // Fallback to sample data if database query fails
         setSampleNotifications();
         return;
-      }
-      
-      console.log('Fetched notifications:', data?.length || 0, 'notifications');
-      console.log('Sample notification:', data?.[0]);
-      
-      // Debug: Log the read status of each notification
-      if (data && data.length > 0) {
-        console.log('Notification read statuses:');
-        data.forEach((notification: any, index: number) => {
-          console.log(`${index + 1}. ID: ${notification.id}, Read: ${notification.read}, Title: ${notification.title}`);
-        });
-        
-        const readCount = data.filter((n: any) => n.read).length;
-        const unreadCount = data.filter((n: any) => !n.read).length;
-        console.log(`Read notifications: ${readCount}, Unread notifications: ${unreadCount}`);
       }
       
       setNotifications(data || []);
@@ -162,23 +143,17 @@ export const NotificationBell = () => {
   const markAsRead = async (notificationId: string) => {
     // Prevent multiple calls on the same notification
     if (markingAsRead === notificationId) {
-      console.log('Already marking notification as read:', notificationId);
       return;
     }
 
     try {
       setMarkingAsRead(notificationId);
-      console.log('Marking notification as read:', notificationId);
-      console.log('Current user:', user?.id);
       
       // Check if notification is already read to prevent unnecessary updates
       const notification = notifications.find(n => n.id === notificationId);
       if (notification?.read) {
-        console.log('Notification already read, skipping update');
         return;
       }
-      
-      console.log('Notification current read status:', notification?.read);
       
       // First, update local state immediately for better UX
       setNotifications(prev => 
@@ -186,8 +161,6 @@ export const NotificationBell = () => {
           n.id === notificationId ? { ...n, read: true } : n
         )
       );
-      
-      console.log('Sending database update for notification:', notificationId);
       
       // Simplified update without the problematic constraint
       const { data, error } = await (supabase as any)
@@ -199,28 +172,12 @@ export const NotificationBell = () => {
 
       if (error) {
         console.error('Error marking notification as read:', error);
-        console.error('Error details:', error.message, error.details, error.hint);
         return;
       }
-
-      console.log('Database update response:', data);
-      console.log('Successfully marked notification as read:', data);
       
       // Only refresh if the database update was successful
       if (data && data.length > 0) {
-        console.log('Refreshing notifications from database...');
         await fetchNotifications();
-      } else {
-        console.log('No rows updated, notification might not exist or already be read');
-        // Let's verify the current state in the database
-        const { data: verifyData } = await (supabase as any)
-          .from('notifications')
-          .select('read')
-          .eq('id', notificationId)
-          .eq('user_id', user?.id)
-          .single();
-        
-        console.log('Current database state for notification:', verifyData);
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -231,8 +188,6 @@ export const NotificationBell = () => {
 
   const markAllAsRead = async () => {
     try {
-      console.log('Marking all notifications as read for user:', user?.id);
-      
       // Update local state immediately for better UX
       setNotifications(prev => 
         prev.map(n => ({ ...n, read: true }))
@@ -249,8 +204,6 @@ export const NotificationBell = () => {
         console.error('Error marking all notifications as read:', error);
         return;
       }
-
-      console.log('Successfully marked all notifications as read:', data);
       
       // Refresh notifications to get updated data from database
       await fetchNotifications();
