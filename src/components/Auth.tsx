@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,13 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { ForgotPassword } from './ForgotPassword';
 import { isValidEmail, isValidPassword } from '@/lib/auth';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Home } from 'lucide-react';
 
 interface AuthProps {
   initialMode?: 'signup' | 'signin' | null;
 }
 
 export const Auth = ({ initialMode }: AuthProps) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
@@ -330,6 +332,17 @@ export const Auth = ({ initialMode }: AuthProps) => {
                 : "Don't have an account? Sign up"
               }
             </button>
+          </div>
+          
+          <div className="mt-6 text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="text-muted-foreground hover:text-primary transition-colors p-2"
+            >
+              <Home className="h-5 w-5" />
+            </Button>
           </div>
         </CardContent>
       </Card>
