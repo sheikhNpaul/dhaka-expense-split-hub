@@ -72,6 +72,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState<string | null>(null);
   
   const [createForm, setCreateForm] = useState({
     name: '',
@@ -400,6 +401,38 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
     });
   };
 
+  const handleEditHome = (home: Home) => {
+    toast({
+      title: "Coming Soon",
+      description: "Edit home functionality will be available soon!",
+    });
+  };
+
+  const handleShareHome = (home: Home) => {
+    const shareText = `Join my home "${home.name}" using code: ${home.home_code}`;
+    if (navigator.share) {
+      navigator.share({
+        title: `Join ${home.name}`,
+        text: shareText,
+      });
+    } else {
+      copyHomeCode(home.home_code);
+      toast({
+        title: "Home Code Copied",
+        description: "Share this code with others to invite them to your home",
+      });
+    }
+  };
+
+  const handleDeleteHome = (home: Home) => {
+    // This will be handled by the HomeAdmin component
+    setShowAdminPanel(home.id);
+  };
+
+  const handleManageMembers = (home: Home) => {
+    setShowAdminPanel(showAdminPanel === home.id ? null : home.id);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header Section */}
@@ -555,7 +588,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
               currentHomeId === home.id ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20' : ''
             }`}
           >
-            <CardHeader className="pb-4">
+            <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
@@ -594,7 +627,10 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem className="cursor-pointer">
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => handleEditHome(home)}
+                    >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Home
                     </DropdownMenuItem>
@@ -605,131 +641,99 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                       <Copy className="h-4 w-4 mr-2" />
                       Copy Code
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => handleShareHome(home)}
+                    >
                       <Share className="h-4 w-4 mr-2" />
                       Share Home
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              {/* Home Code Section */}
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
-                    <Key className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">Home Code</p>
-                    <code className="text-sm font-mono font-bold">{home.home_code}</code>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyHomeCode(home.home_code)}
-                  className="h-8 w-8 hover:bg-muted"
-                >
-                  {copiedCode === home.home_code ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-
-              {/* Members Section */}
-              {members[home.id] && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Members ({members[home.id].length})</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {members[home.id].slice(0, 3).map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg"
-                      >
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
-                          <User className="h-3 w-3 text-white" />
-                        </div>
-                        <span className="text-xs font-medium truncate max-w-20">
-                          {member.profile.name}
-                        </span>
-                        {member.is_admin && (
-                          <Crown className="h-3 w-3 text-yellow-500" />
-                        )}
-                      </div>
-                    ))}
-                    {members[home.id].length > 3 && (
-                      <div className="px-3 py-1.5 bg-muted/50 rounded-lg">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          +{members[home.id].length - 3} more
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 pt-2">
-                {currentHomeId !== home.id && (
-                  <Button
-                    variant="outline"
-                    onClick={() => handleSwitchHome(home.id)}
-                    className="flex-1 h-10 border-2 hover:bg-muted/50 transition-all duration-200"
-                  >
-                    <ArrowRight className="h-4 w-4 mr-2" />
-                    Switch to This Home
-                  </Button>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 px-3 hover:bg-muted/50"
+                    <DropdownMenuItem 
+                      className="cursor-pointer"
+                      onClick={() => handleManageMembers(home)}
                     >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem className="cursor-pointer">
                       <Users className="h-4 w-4 mr-2" />
                       Manage Members
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Admin Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer text-destructive">
+                    <DropdownMenuItem 
+                      className="cursor-pointer text-destructive"
+                      onClick={() => handleDeleteHome(home)}
+                    >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete Home
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-4">
+              {/* Compact Info Section */}
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
+                    <Key className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Code</p>
+                    <code className="text-sm font-mono font-bold">{home.home_code}</code>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs font-medium">{members[home.id]?.length || 0}</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyHomeCode(home.home_code)}
+                    className="h-6 w-6 p-0 hover:bg-muted"
+                  >
+                    {copiedCode === home.home_code ? (
+                      <Check className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
 
-              {/* Admin Section */}
-              {members[home.id] && (
-                <HomeAdmin
-                  homeId={home.id}
-                  homeName={home.name}
-                  members={members[home.id]}
-                  currentUserId={user.id}
-                  onMembershipChange={() => refreshHomeMembers(home.id)}
-                  onHomeDeleted={fetchUserHomes}
-                />
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {currentHomeId !== home.id && (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSwitchHome(home.id)}
+                    className="flex-1 h-9 border-2 hover:bg-muted/50 transition-all duration-200 text-sm"
+                  >
+                    <ArrowRight className="h-3 w-3 mr-2" />
+                    Switch to This Home
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleManageMembers(home)}
+                  className="h-9 px-3 border-2 hover:bg-muted/50 transition-all duration-200"
+                >
+                  <Settings className="h-3 w-3" />
+                </Button>
+              </div>
+
+              {/* Admin Panel (Collapsible) */}
+              {showAdminPanel === home.id && members[home.id] && (
+                <div className="pt-4 border-t border-border/50">
+                  <HomeAdmin
+                    homeId={home.id}
+                    homeName={home.name}
+                    members={members[home.id]}
+                    currentUserId={user.id}
+                    onMembershipChange={() => refreshHomeMembers(home.id)}
+                    onHomeDeleted={fetchUserHomes}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
