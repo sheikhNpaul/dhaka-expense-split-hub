@@ -145,6 +145,30 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
 
       if (error) throw error;
 
+      // Send notifications to all participants except the payer
+      const participantsToNotify = formData.selectedParticipants.filter(participantId => participantId !== user.id);
+      
+      if (participantsToNotify.length > 0) {
+        const payerName = homeMembers.find(member => member.user_id === user.id)?.profile.name || user.email || 'Someone';
+        const amount = parseFloat(formData.amount);
+        
+        // Create notifications for all participants
+        const notificationPromises = participantsToNotify.map(participantId => 
+          (supabase as any)
+            .from('notifications')
+            .insert({
+              user_id: participantId,
+              title: 'New Expense Added',
+              message: `${payerName} added a new expense: "${formData.title}" for ৳${amount.toFixed(2)}`,
+              type: 'expense',
+              read: false,
+            })
+        );
+
+        // Send all notifications in parallel
+        await Promise.all(notificationPromises);
+      }
+
       toast({
         title: "Success!",
         description: "Expense added successfully.",
