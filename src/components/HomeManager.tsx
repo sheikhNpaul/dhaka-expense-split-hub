@@ -585,7 +585,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
           <Card 
             key={home.id} 
             className={`group border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl hover:shadow-2xl transition-all duration-300 ${
-              currentHomeId === home.id ? 'ring-2 ring-blue-500 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20' : ''
+              currentHomeId === home.id ? 'ring-2 ring-primary bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20' : ''
             }`}
           >
             <CardHeader className="pb-3 px-4 sm:px-6">
@@ -594,8 +594,8 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                   <div className="flex items-center gap-2 sm:gap-3 mb-2">
                     <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                       currentHomeId === home.id 
-                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white' 
-                        : 'bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700'
+                        ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground' 
+                        : 'bg-gradient-to-br from-muted to-muted/80 text-muted-foreground'
                     }`}>
                       <Home className="h-4 w-4 sm:h-5 sm:w-5" />
                     </div>
@@ -610,7 +610,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                     </div>
                   </div>
                   {currentHomeId === home.id && (
-                    <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0 text-xs">
+                    <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 text-xs">
                       <Crown className="h-3 w-3 mr-1" />
                       Current Home
                     </Badge>
@@ -672,8 +672,8 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
               {/* Compact Info Section */}
               <div className="flex items-center justify-between p-3 sm:p-3 bg-muted/30 rounded-lg">
                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
-                    <Key className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
+                    <Key className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-muted-foreground">Code</p>

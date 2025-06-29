@@ -97,8 +97,8 @@ export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTrans
       <DialogContent className="sm:max-w-md">
         <DialogHeader className="space-y-3 sm:space-y-4">
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-              <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+              <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
             <div>
               <DialogTitle className="text-base sm:text-lg font-bold">Make Admin</DialogTitle>
@@ -110,12 +110,12 @@ export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTrans
         </DialogHeader>
         
         <div className="space-y-4 sm:space-y-6">
-          <div className="p-3 sm:p-4 bg-yellow-50/50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+          <div className="p-3 sm:p-4 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20 dark:border-primary/30">
             <div className="flex items-start gap-2 sm:gap-3">
-              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-1 text-sm sm:text-base">Admin Transfer</h4>
-                <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
+                <h4 className="font-semibold text-primary mb-1 text-sm sm:text-base">Admin Transfer</h4>
+                <p className="text-xs sm:text-sm text-primary/80 dark:text-primary/70">
                   This will transfer all admin privileges to {member.profile.name}. You will lose admin access to this home.
                 </p>
               </div>
@@ -133,7 +133,7 @@ export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTrans
             <Button
               onClick={handleTransfer}
               disabled={isTransferring}
-              className="h-12 sm:h-9 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg touch-manipulation"
+              className="h-12 sm:h-9 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg touch-manipulation"
             >
               {isTransferring ? (
                 <>

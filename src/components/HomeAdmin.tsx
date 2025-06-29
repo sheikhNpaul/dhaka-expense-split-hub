@@ -204,8 +204,8 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
                 className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50"
               >
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{member.profile.name}</p>
@@ -213,7 +213,7 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
                   </div>
                 </div>
                 {member.is_admin && (
-                  <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 text-xs">
+                  <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 text-xs">
                     <Crown className="h-3 w-3 mr-1" />
                     Admin
                   </Badge>
@@ -232,8 +232,8 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
       <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-lg">
         <CardHeader className="pb-3 px-4 sm:px-6">
           <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-primary-foreground" />
             </div>
             Manage Members ({members.length})
           </CardTitle>
@@ -247,8 +247,8 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
                 className="flex items-center justify-between p-3 sm:p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center flex-shrink-0">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-muted to-muted/80 flex items-center justify-center flex-shrink-0">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{member.profile.name}</p>
@@ -258,7 +258,7 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
                 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {member.is_admin && (
-                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 text-xs">
+                    <Badge className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0 text-xs">
                       <Crown className="h-3 w-3 mr-1" />
                       Admin
                     </Badge>
@@ -291,11 +291,11 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
       </Card>
 
       {/* Danger Zone */}
-      <Card className="border-0 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 backdrop-blur shadow-lg">
+      <Card className="border-0 bg-gradient-to-br from-destructive/5 to-destructive/10 dark:from-destructive/10 dark:to-destructive/20 backdrop-blur shadow-lg">
         <CardHeader className="pb-3 px-4 sm:px-6">
           <CardTitle className="text-base sm:text-lg font-bold flex items-center gap-2 text-destructive">
-            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center">
-              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-destructive to-destructive/80 flex items-center justify-center">
+              <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive-foreground" />
             </div>
             Danger Zone
           </CardTitle>
@@ -303,19 +303,19 @@ export const HomeAdmin = ({ homeId, homeName, members, currentUserId, onMembersh
         
         <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="space-y-3 sm:space-y-4">
-            <div className="p-3 sm:p-4 bg-red-100/50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <div className="p-3 sm:p-4 bg-destructive/5 dark:bg-destructive/10 rounded-lg border border-destructive/20 dark:border-destructive/30">
               <div className="flex items-start gap-2 sm:gap-3">
-                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <Trash2 className="h-4 w-4 sm:h-5 sm:w-5 text-destructive mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-red-900 dark:text-red-100 mb-1 text-sm sm:text-base">Delete Home</h4>
-                  <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mb-3">
+                  <h4 className="font-semibold text-destructive mb-1 text-sm sm:text-base">Delete Home</h4>
+                  <p className="text-xs sm:text-sm text-destructive/80 dark:text-destructive/70 mb-3">
                     This will permanently delete "{homeName}" and all associated data including expenses, payments, and member records.
                   </p>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={() => setShowDeleteHomeDialog(true)}
-                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg h-10 sm:h-9 touch-manipulation"
+                    className="bg-gradient-to-r from-destructive to-destructive/80 hover:from-destructive/90 hover:to-destructive text-destructive-foreground shadow-lg h-10 sm:h-9 touch-manipulation"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Home
