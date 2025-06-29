@@ -438,11 +438,11 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       {/* Header Section */}
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
             <Building2 className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Homes</h1>
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Homes</h1>
             <p className="text-muted-foreground">Manage your shared living spaces</p>
           </div>
         </div>
@@ -451,7 +451,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         <div className="flex flex-col sm:flex-row gap-3">
           <Button
             onClick={() => setShowCreateForm(!showCreateForm)}
-            className="h-12 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            className="h-12 px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <Sparkles className="h-4 w-4 mr-2" />
             Create New Home
@@ -472,8 +472,8 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <Plus className="h-4 w-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <Plus className="h-4 w-4 text-primary-foreground" />
               </div>
               Create New Home
             </CardTitle>
@@ -491,7 +491,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                   onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., Our Apartment, Student House, Family Home"
                   required
-                  className="h-12 text-base border-2 focus:border-blue-500 transition-colors"
+                  className="h-12 text-base border-2 focus:border-primary transition-colors"
                 />
               </div>
               <div className="space-y-2">
@@ -504,14 +504,14 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                   value={createForm.address}
                   onChange={(e) => setCreateForm(prev => ({ ...prev, address: e.target.value }))}
                   placeholder="e.g., 123 Main St, City, State"
-                  className="h-12 text-base border-2 focus:border-blue-500 transition-colors"
+                  className="h-12 text-base border-2 focus:border-primary transition-colors"
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button 
                   type="submit" 
                   disabled={loading} 
-                  className="h-12 px-8 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="h-12 px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {loading ? 'Creating...' : 'Create Home'}
                 </Button>
@@ -534,8 +534,8 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
         <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                <UserPlus className="h-4 w-4 text-white" />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                <UserPlus className="h-4 w-4 text-primary-foreground" />
               </div>
               Join Existing Home
             </CardTitle>
@@ -554,14 +554,14 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
                   placeholder="Enter 8-character home code"
                   maxLength={8}
                   required
-                  className="h-12 text-base border-2 focus:border-green-500 transition-colors font-mono text-center tracking-widest"
+                  className="h-12 text-base border-2 focus:border-primary transition-colors font-mono text-center tracking-widest"
                 />
               </div>
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button 
                   type="submit" 
                   disabled={loading} 
-                  className="h-12 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="h-12 px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {loading ? 'Joining...' : 'Join Home'}
                 </Button>
@@ -746,7 +746,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
       {homes.length === 0 && (
         <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
           <CardContent className="text-center py-16">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 dark:from-primary/20 dark:to-primary/30 flex items-center justify-center mx-auto mb-6">
               <Building2 className="h-10 w-10 text-muted-foreground" />
             </div>
             <h3 className="text-xl font-bold mb-3">No homes yet</h3>
@@ -756,7 +756,7 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
                 onClick={() => setShowCreateForm(true)}
-                className="h-12 px-6 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                className="h-12 px-6 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Create Your First Home
