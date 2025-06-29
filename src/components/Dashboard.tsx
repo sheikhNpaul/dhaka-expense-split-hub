@@ -117,7 +117,7 @@ export const Dashboard = () => {
         return (
           <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Homes</h1>
                 <p className="text-muted-foreground text-base sm:text-lg mt-2">
                   Manage your shared living spaces and members
@@ -135,7 +135,7 @@ export const Dashboard = () => {
         return (
           <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Expenses</h1>
                 <p className="text-muted-foreground text-base sm:text-lg mt-2">
                   Track and manage shared expenses
@@ -192,20 +192,24 @@ export const Dashboard = () => {
       case 'meals':
         return (
           <div className="space-y-6 sm:space-y-8">
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Meal Planner</h1>
               <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 Plan and track shared meals
               </p>
             </div>
-            <MealPlanner currentHomeId={currentHomeId} selectedMonth={selectedMonth} />
+            <MealPlanner 
+              currentHomeId={currentHomeId} 
+              selectedMonth={selectedMonth} 
+              onMonthChange={setSelectedMonth}
+            />
           </div>
         );
 
       case 'balances':
         return (
           <div className="space-y-6 sm:space-y-8">
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Balances</h1>
               <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 View expense balances and settlements
@@ -222,7 +226,7 @@ export const Dashboard = () => {
       case 'payments':
         return (
           <div className="space-y-6 sm:space-y-8">
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Payments</h1>
               <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 Manage payment requests and settlements
@@ -239,7 +243,7 @@ export const Dashboard = () => {
       default:
         return (
           <div className="space-y-6 sm:space-y-8">
-            <div>
+            <div className="hidden sm:block">
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Dashboard</h1>
               <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 Welcome to your expense tracker

@@ -10,6 +10,8 @@ import { Calendar, ChevronLeft, ChevronRight, Utensils, Users, Plus, Minus, Cale
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isSameWeek } from 'date-fns';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'; // adjust import as per your modal/dialog component
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface MealOrder {
   id: string;
@@ -32,12 +34,12 @@ interface MealPlannerProps {
   currentHomeId: string;
   selectedMonth: Date;
   refreshTrigger?: number;
+  onMonthChange?: (month: Date) => void;
 }
 
-export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: MealPlannerProps) => {
+export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger, onMonthChange }: MealPlannerProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [currentMonth, setCurrentMonth] = useState(selectedMonth);
   const [mealOrders, setMealOrders] = useState<MealOrder[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,8 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     try {
       setLoading(true);
 
-      const monthStart = startOfMonth(currentMonth);
-      const monthEnd = endOfMonth(currentMonth);
+      const monthStart = startOfMonth(selectedMonth);
+      const monthEnd = endOfMonth(selectedMonth);
 
       const { data, error } = await supabase
         .from('meal_orders')
@@ -79,14 +81,14 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
     } finally {
       setLoading(false);
     }
-  }, [user, currentHomeId, currentMonth, toast]);
+  }, [user, currentHomeId, selectedMonth, toast]);
 
   useEffect(() => {
     if (user && currentHomeId) {
       fetchMealOrders();
       fetchProfiles();
     }
-  }, [user, currentHomeId, currentMonth, refreshTrigger, fetchMealOrders]);
+  }, [user, currentHomeId, selectedMonth, refreshTrigger, fetchMealOrders]);
   // ^^^ Fix: add fetchMealOrders to dependency array
 
   const fetchProfiles = async () => {
@@ -101,10 +103,6 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
       }, {} as Record<string, Profile>);
       setProfiles(profileMap);
     }
-  };
-
-  const handleMonthChange = (direction: 'prev' | 'next') => {
-    setCurrentMonth(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
   };
 
   const handleMealCountChange = async (date: Date, newCount: number) => {
@@ -190,8 +188,8 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
   };
 
   const calendarDays = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
+    start: startOfMonth(selectedMonth),
+    end: endOfMonth(selectedMonth),
   });
 
   const homeMembers = Object.values(profiles).filter(profile => 
@@ -201,31 +199,43 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
   const selectedDateMeals = selectedDate ? getMealCountForDate(selectedDate, user?.id || '') : 0;
   const selectedDateTotal = selectedDate ? getTotalMealsForDate(selectedDate) : 0;
 
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+    if (onMonthChange) {
+      const newMonth = direction === 'prev' ? subMonths(selectedMonth, 1) : addMonths(selectedMonth, 1);
+      onMonthChange(newMonth);
+    }
+  };
+
   return (
     <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
       <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2 sm:mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Meal Planner
             </CardTitle>
-            <div className="flex items-center justify-center sm:justify-start gap-2">
+            <div className="flex items-center justify-center sm:justify-start space-x-4">
               <Button
-                variant="ghost"
-                size="icon"
+                variant="outline"
+                size="sm"
                 onClick={() => handleMonthChange('prev')}
-                className="h-10 w-10 sm:h-8 sm:w-8"
+                className="h-12 w-12 p-0 rounded-xl"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-5 w-5" />
               </Button>
-              <span className="text-sm sm:text-base font-medium">{format(currentMonth, 'MMMM yyyy')}</span>
+              <div className="flex items-center space-x-3 min-w-0 bg-muted/50 rounded-xl px-4 py-2">
+                <Calendar className="h-5 w-5 flex-shrink-0" />
+                <span className="font-semibold text-base sm:text-lg truncate">
+                  {format(selectedMonth, 'MMMM yyyy')}
+                </span>
+              </div>
               <Button
-                variant="ghost"
-                size="icon"
+                variant="outline"
+                size="sm"
                 onClick={() => handleMonthChange('next')}
-                className="h-10 w-10 sm:h-8 sm:w-8"
+                className="h-12 w-12 p-0 rounded-xl"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -235,18 +245,18 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               variant={viewMode === 'calendar' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('calendar')}
-              className="h-9 px-3"
+              className="h-9 px-2 sm:px-3 text-xs sm:text-sm"
             >
-              <CalendarDays className="h-4 w-4 mr-1" />
+              <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               Calendar
             </Button>
             <Button
               variant={viewMode === 'summary' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('summary')}
-              className="h-9 px-3"
+              className="h-9 px-2 sm:px-3 text-xs sm:text-sm"
             >
-              <TrendingUp className="h-4 w-4 mr-1" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
               Summary
             </Button>
           </div>
@@ -266,13 +276,13 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
             {/* Selected Date Controls */}
             {selectedDate && (
               <Card className="border-0 bg-gradient-to-br from-background to-background/80 backdrop-blur shadow-lg">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-semibold truncate">
                         {format(selectedDate, 'EEEE, MMMM d')}
                       </h3>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {selectedDateTotal} total meals planned
                       </p>
                     </div>
@@ -280,25 +290,25 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                       variant="ghost"
                       size="sm"
                       onClick={() => setSelectedDate(null)}
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 ml-2 flex-shrink-0"
                     >
                       ×
                     </Button>
                   </div>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Your meals</p>
-                        <p className="text-2xl font-bold text-primary">{selectedDateMeals}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Your meals</p>
+                        <p className="text-xl sm:text-2xl font-bold text-primary">{selectedDateMeals}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Total</p>
-                        <p className="text-2xl font-bold">{selectedDateTotal}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground">Total</p>
+                        <p className="text-xl sm:text-2xl font-bold">{selectedDateTotal}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 justify-center sm:justify-end">
                       <Button
                         size="sm"
                         variant="outline"
@@ -323,10 +333,10 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
             )}
 
             {/* Calendar Grid */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Day headers */}
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
+                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1 sm:p-2">
                   {day}
                 </div>
               ))}
@@ -335,7 +345,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
               {calendarDays.map(day => {
                 const totalMeals = getTotalMealsForDate(day);
                 const userMeals = getMealCountForDate(day, user?.id || '');
-                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isCurrentMonth = isSameMonth(day, selectedMonth);
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
                 
                 return (
@@ -347,7 +357,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                     }}
                     disabled={!isCurrentMonth}
                     className={`
-                      aspect-square p-2 rounded-lg border-2 transition-all duration-200
+                      min-h-[3rem] sm:aspect-square p-1 sm:p-2 rounded-lg border-2 transition-all duration-200
                       ${isSelected 
                         ? 'border-primary bg-primary/10 ring-2 ring-primary/20' 
                         : 'border-transparent hover:border-primary/30 hover:bg-primary/5'
@@ -358,13 +368,13 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                       focus:outline-none focus:ring-2 focus:ring-primary/50
                     `}
                   >
-                    <div className="text-sm font-medium mb-1">
+                    <div className="text-xs sm:text-sm font-medium mb-1">
                       {format(day, 'd')}
                     </div>
                     
                     {totalMeals > 0 && (
                       <div className="flex items-center justify-center">
-                        <Badge variant="secondary" className="text-xs px-1 py-0.5">
+                        <Badge variant="secondary" className="text-xs px-1 py-0.5 min-w-[1.5rem]">
                           {totalMeals}
                         </Badge>
                       </div>
@@ -373,7 +383,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger }: Me
                     {/* Green dot if user has meal for this day */}
                     {userMeals > 0 && (
                       <div className="flex items-center justify-center mt-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full border border-white shadow" />
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full border border-white shadow" />
                       </div>
                     )}
                   </button>

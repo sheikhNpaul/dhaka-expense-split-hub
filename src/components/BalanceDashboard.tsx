@@ -404,7 +404,7 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth, refreshTrigger 
     <>
       <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2 sm:mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
               <CardTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 Balance Summary
