@@ -105,15 +105,25 @@ export const NotionSidebar = ({
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex h-16 items-center justify-between px-4 border-b border-border">
+      <div className={`flex items-center justify-between border-b border-border ${
+        isMobile ? 'h-20 px-6' : 'h-16 px-4'
+      }`}>
         {!isCollapsed && (
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">ET</span>
+          <div className="flex items-center space-x-3">
+            <div className={`rounded-lg bg-primary flex items-center justify-center ${
+              isMobile ? 'h-12 w-12' : 'h-8 w-8'
+            }`}>
+              <span className={`text-primary-foreground font-bold ${
+                isMobile ? 'text-lg' : 'text-sm'
+              }`}>ET</span>
             </div>
             <div>
-              <h1 className="font-semibold text-sm">Expense Tracker</h1>
-              <p className="text-xs text-muted-foreground">Manage expenses</p>
+              <h1 className={`font-semibold ${
+                isMobile ? 'text-lg' : 'text-sm'
+              }`}>Expense Tracker</h1>
+              <p className={`text-muted-foreground ${
+                isMobile ? 'text-sm' : 'text-xs'
+              }`}>Manage expenses</p>
             </div>
           </div>
         )}
@@ -138,7 +148,11 @@ export const NotionSidebar = ({
               <Button
                 key={item.id}
                 variant={currentTab === item.id ? "secondary" : "ghost"}
-                className={`w-full justify-start h-10 px-3 ${
+                className={`w-full justify-start px-3 ${
+                  isMobile 
+                    ? 'h-14 text-base' 
+                    : 'h-10 text-sm'
+                } ${
                   currentTab === item.id 
                     ? "bg-secondary text-secondary-foreground" 
                     : "hover:bg-accent hover:text-accent-foreground"
@@ -146,8 +160,10 @@ export const NotionSidebar = ({
                 onClick={() => !item.disabled && handleTabChange(item.id)}
                 disabled={item.disabled}
               >
-                <Icon className="h-4 w-4 mr-3" />
-                {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                <Icon className={`mr-3 ${
+                  isMobile ? 'h-5 w-5' : 'h-4 w-4'
+                }`} />
+                {!isCollapsed && <span>{item.label}</span>}
               </Button>
             );
           })}
@@ -155,8 +171,10 @@ export const NotionSidebar = ({
 
         {/* Quick Actions */}
         {!isCollapsed && currentHomeId && (
-          <div className="mt-6 pt-6 border-t border-border">
-            <h3 className="text-xs font-medium text-muted-foreground mb-3 px-3">
+          <div className="mt-8 pt-6 border-t border-border">
+            <h3 className={`font-medium text-muted-foreground mb-4 px-3 ${
+              isMobile ? 'text-base' : 'text-xs'
+            }`}>
               Quick Actions
             </h3>
             <Button
@@ -164,26 +182,36 @@ export const NotionSidebar = ({
                 onAddExpense();
                 if (isMobile) setIsMobileMenuOpen(false);
               }}
-              className="w-full justify-start h-10 px-3 bg-primary text-primary-foreground hover:bg-primary/90"
+              className={`w-full justify-start px-3 bg-primary text-primary-foreground hover:bg-primary/90 ${
+                isMobile ? 'h-14 text-base' : 'h-10 text-sm'
+              }`}
             >
-              <Plus className="h-4 w-4 mr-3" />
-              <span className="text-sm">Add Expense</span>
+              <Plus className={`mr-3 ${
+                isMobile ? 'h-5 w-5' : 'h-4 w-4'
+              }`} />
+              <span>Add Expense</span>
             </Button>
           </div>
         )}
       </ScrollArea>
 
       {/* Footer */}
-      <div className="border-t border-border p-4 space-y-3">
+      <div className={`border-t border-border space-y-4 ${
+        isMobile ? 'p-6' : 'p-4'
+      }`}>
         {/* User Profile */}
         <div className="flex items-center space-x-3">
           <UserProfile profile={profile} onProfileUpdate={onProfileUpdate} />
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
+              <p className={`font-medium truncate ${
+                isMobile ? 'text-base' : 'text-sm'
+              }`}>
                 {profile?.name || 'User'}
               </p>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className={`text-muted-foreground truncate ${
+                isMobile ? 'text-sm' : 'text-xs'
+              }`}>
                 {profile?.email || 'user@example.com'}
               </p>
             </div>
@@ -191,7 +219,7 @@ export const NotionSidebar = ({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <ThemeToggle />
           <NotificationBell />
           {!isCollapsed && (
@@ -199,10 +227,14 @@ export const NotionSidebar = ({
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="flex-1 justify-start h-9 px-3 text-muted-foreground hover:text-foreground"
+              className={`justify-start text-muted-foreground hover:text-foreground ${
+                isMobile ? 'flex-1 h-12 text-base px-4' : 'flex-1 h-9 text-sm px-3'
+              }`}
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              <span className="text-sm">Sign Out</span>
+              <LogOut className={`mr-2 ${
+                isMobile ? 'h-5 w-5' : 'h-4 w-4'
+              }`} />
+              <span>Sign Out</span>
             </Button>
           )}
         </div>
@@ -220,12 +252,12 @@ export const NotionSidebar = ({
             <Button
               variant="ghost"
               size="sm"
-              className="fixed top-4 left-4 z-50 h-10 w-10 p-0 bg-background/80 backdrop-blur border border-border"
+              className="fixed top-4 left-4 z-50 h-12 w-12 p-0 bg-background/95 backdrop-blur border border-border shadow-lg rounded-xl"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-0">
+          <SheetContent side="left" className="w-full max-w-sm p-0">
             <SidebarContent />
           </SheetContent>
         </Sheet>

@@ -115,11 +115,11 @@ export const Dashboard = () => {
     switch (currentTab) {
       case 'homes':
         return (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Homes</h1>
-                <p className="text-muted-foreground text-sm sm:text-base">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Homes</h1>
+                <p className="text-muted-foreground text-base sm:text-lg mt-2">
                   Manage your shared living spaces and members
                 </p>
               </div>
@@ -133,34 +133,37 @@ export const Dashboard = () => {
 
       case 'expenses':
         return (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Expenses</h1>
-                <p className="text-muted-foreground text-sm sm:text-base">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Expenses</h1>
+                <p className="text-muted-foreground text-base sm:text-lg mt-2">
                   Track and manage shared expenses
                 </p>
               </div>
               {currentHomeId && (
-                <Button onClick={() => setShowAddExpense(true)} className="w-full sm:w-auto">
+                <Button 
+                  onClick={() => setShowAddExpense(true)} 
+                  className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm px-6"
+                >
                   Add Expense
                 </Button>
               )}
             </div>
             
             {currentHomeId && (
-              <div className="flex items-center justify-center sm:justify-start space-x-4 mb-6">
+              <div className="flex items-center justify-center sm:justify-start space-x-4 mb-8">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleMonthChange('prev')}
-                  className="h-10 w-10 p-0"
+                  className="h-12 w-12 p-0 rounded-xl"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-5 w-5" />
                 </Button>
-                <div className="flex items-center space-x-2 min-w-0">
-                  <Calendar className="h-4 w-4 flex-shrink-0" />
-                  <span className="font-medium text-sm sm:text-base truncate">
+                <div className="flex items-center space-x-3 min-w-0 bg-muted/50 rounded-xl px-4 py-2">
+                  <Calendar className="h-5 w-5 flex-shrink-0" />
+                  <span className="font-semibold text-base sm:text-lg truncate">
                     {format(selectedMonth, 'MMMM yyyy')}
                   </span>
                 </div>
@@ -168,9 +171,9 @@ export const Dashboard = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => handleMonthChange('next')}
-                  className="h-10 w-10 p-0"
+                  className="h-12 w-12 p-0 rounded-xl"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-5 w-5" />
                 </Button>
               </div>
             )}
@@ -188,10 +191,10 @@ export const Dashboard = () => {
 
       case 'meals':
         return (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Meal Planner</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Meal Planner</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 Plan and track shared meals
               </p>
             </div>
@@ -201,10 +204,10 @@ export const Dashboard = () => {
 
       case 'balances':
         return (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Balances</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Balances</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 View expense balances and settlements
               </p>
             </div>
@@ -218,10 +221,10 @@ export const Dashboard = () => {
 
       case 'payments':
         return (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Payments</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Payments</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 Manage payment requests and settlements
               </p>
             </div>
@@ -235,10 +238,10 @@ export const Dashboard = () => {
 
       default:
         return (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-6 sm:space-y-8">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
-              <p className="text-muted-foreground text-sm sm:text-base">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
                 Welcome to your expense tracker
               </p>
             </div>
@@ -260,10 +263,16 @@ export const Dashboard = () => {
       {/* Main Content */}
       <div className={`flex-1 flex flex-col ${isMobile ? 'ml-0' : 'ml-64'}`}>
         {/* Top Bar */}
-        <div className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex h-full items-center px-4 sm:px-6">
+        <div className={`border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+          isMobile ? 'h-20' : 'h-16'
+        }`}>
+          <div className={`flex h-full items-center ${
+            isMobile ? 'px-6' : 'px-6'
+          }`}>
             <div className="flex items-center space-x-4">
-              <h2 className="text-lg font-semibold capitalize">
+              <h2 className={`font-semibold capitalize ${
+                isMobile ? 'text-xl' : 'text-lg'
+              }`}>
                 {currentTab === 'homes' && 'Homes'}
                 {currentTab === 'expenses' && 'Expenses'}
                 {currentTab === 'meals' && 'Meal Planner'}
@@ -276,7 +285,9 @@ export const Dashboard = () => {
 
         {/* Page Content */}
         <div className="flex-1 overflow-auto">
-          <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+          <div className={`container mx-auto max-w-7xl ${
+            isMobile ? 'p-4' : 'p-6'
+          }`}>
             {renderContent()}
           </div>
         </div>
