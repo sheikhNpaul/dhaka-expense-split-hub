@@ -116,6 +116,24 @@ export const PaymentRequests = ({ currentHomeId, onPaymentStatusChange, selected
 
       if (error) throw error;
 
+      // Get the request details to send notifications
+      const request = requests.find(r => r.id === requestId);
+      if (request) {
+        const currentUserName = user?.email || 'Someone';
+        const statusText = status === 'approved' ? 'approved' : 'rejected';
+        
+        // Notify the person who made the request
+        await (supabase as any)
+          .from('notifications')
+          .insert({
+            user_id: request.from_user_id,
+            title: 'Payment Request Update',
+            message: `${currentUserName} ${statusText} your payment request of ৳${request.amount.toFixed(2)}`,
+            type: 'payment',
+            read: false,
+          });
+      }
+
       toast({
         title: "Success",
         description: status === 'approved' ? "Payment marked as settled" : "Payment request rejected",

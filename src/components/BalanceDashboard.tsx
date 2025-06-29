@@ -291,6 +291,26 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth, refreshTrigger 
 
       if (error) throw error;
 
+      // Get current user's profile for notification
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', user.id)
+        .single();
+
+      const fromUserName = userProfile?.name || userProfile?.email || 'Someone';
+
+      // Send notification to the person being requested for payment
+      await (supabase as any)
+        .from('notifications')
+        .insert({
+          user_id: toUserId,
+          title: 'Payment Request',
+          message: `${fromUserName} requested ৳${amount.toFixed(2)} from you`,
+          type: 'payment',
+          read: false,
+        });
+
       toast({
         title: "Success",
         description: "Payment request sent successfully",
@@ -320,6 +340,26 @@ export const BalanceDashboard = ({ currentHomeId, selectedMonth, refreshTrigger 
         });
 
       if (requestError) throw requestError;
+
+      // Get current user's profile for notification
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('id', user.id)
+        .single();
+
+      const fromUserName = userProfile?.name || userProfile?.email || 'Someone';
+
+      // Send notification to the person being requested for payment
+      await (supabase as any)
+        .from('notifications')
+        .insert({
+          user_id: selectedPayment.toUserId,
+          title: 'Payment Request',
+          message: `${fromUserName} requested ৳${selectedPayment.amount.toFixed(2)} from you`,
+          type: 'payment',
+          read: false,
+        });
 
       toast({
         title: "Success",

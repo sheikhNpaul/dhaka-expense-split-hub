@@ -281,6 +281,39 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
             user_id: user.id,
             is_admin: false
           });
+
+        // Get current user's profile for notification
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', user.id)
+          .single();
+
+        const userName = userProfile?.name || userProfile?.email || 'Someone';
+
+        // Notify existing home members about the new member
+        const { data: existingMembers } = await supabase
+          .from('home_members')
+          .select('user_id')
+          .eq('home_id', homeData.id)
+          .eq('is_active', true)
+          .neq('user_id', user.id); // Don't notify the new member themselves
+
+        if (existingMembers && existingMembers.length > 0) {
+          const notificationPromises = existingMembers.map(member => 
+            (supabase as any)
+              .from('notifications')
+              .insert({
+                user_id: member.user_id,
+                title: 'New Home Member',
+                message: `${userName} joined your home: "${homeData.name}"`,
+                type: 'system',
+                read: false,
+              })
+          );
+
+          await Promise.all(notificationPromises);
+        }
       }
 
       // Update user's current home

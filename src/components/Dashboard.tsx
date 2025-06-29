@@ -12,6 +12,7 @@ import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
 import { HomeManager } from './HomeManager';
 import { MealPlanner } from './MealPlanner';
+import { NotificationBell } from './NotificationBell';
 import { LogOut, Plus, Receipt, TrendingUp, Home, ChevronLeft, ChevronRight, Utensils } from 'lucide-react';
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from 'date-fns';
 import { PaymentRequests } from '@/components/PaymentRequests';
@@ -132,6 +133,8 @@ export const Dashboard = () => {
                   <span className="hidden sm:inline text-xs sm:text-sm">Add Expense</span>
                 </Button>
               )}
+              
+              <NotificationBell />
               
               <UserProfile profile={profile} onProfileUpdate={handleProfileUpdate} />
               

@@ -119,6 +119,17 @@ export const UserProfile = ({ profile, onProfileUpdate }: UserProfileProps) => {
         description: "Your profile has been updated successfully.",
       });
       
+      // Add a notification for the profile update
+      await (supabase as any)
+        .from('notifications')
+        .insert({
+          user_id: user?.id,
+          title: 'Profile Updated',
+          message: 'Your profile information has been successfully updated.',
+          type: 'system',
+          read: false,
+        });
+      
       onProfileUpdate();
       setIsOpen(false);
       setFormData({ ...formData, newPassword: '', confirmPassword: '' });
