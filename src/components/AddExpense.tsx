@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { X, Users, Plus, Check } from 'lucide-react';
+import { X, Users, Plus, Check, Edit } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Tooltip from '@mui/material/Tooltip';
 import FastfoodIcon from '@mui/icons-material/Fastfood';
@@ -89,6 +89,8 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '', icon: '' });
   const [categoryGlow, setCategoryGlow] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; icon: string } | null>(null);
+  const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
   const glowTimeout = useRef<NodeJS.Timeout | null>(null);
   
   const [formData, setFormData] = useState({
@@ -197,6 +199,61 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
         setShowCategoryModal(false);
         setNewCategory({ name: '', icon: '' });
         toast({ title: 'Category created!' });
+      } else {
+        toast({ title: 'Error', description: error?.message, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleEditCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingCategory || !editingCategory.name || !editingCategory.icon) {
+      toast({ 
+        title: 'Error', 
+        description: 'Please provide both name and select an icon', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+    try {
+      const { data, error } = await (supabase as any)
+        .from('categories')
+        .update({ name: editingCategory.name, icon: editingCategory.icon })
+        .eq('id', editingCategory.id)
+        .eq('user_id', user.id)
+        .select('id, name, icon')
+        .single();
+      if (!error && data) {
+        setCategories(categories.map(cat => cat.id === data.id ? data : cat));
+        setShowEditCategoryModal(false);
+        setEditingCategory(null);
+        toast({ title: 'Category updated!' });
+      } else {
+        toast({ title: 'Error', description: error?.message, variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm('Are you sure you want to delete this category? This will remove it from all expenses.')) return;
+    
+    try {
+      const { error } = await (supabase as any)
+        .from('categories')
+        .delete()
+        .eq('id', categoryId)
+        .eq('user_id', user.id);
+      
+      if (!error) {
+        setCategories(categories.filter(cat => cat.id !== categoryId));
+        if (formData.category_id === categoryId) {
+          setFormData(prev => ({ ...prev, category_id: '' }));
+        }
+        toast({ title: 'Category deleted!' });
       } else {
         toast({ title: 'Error', description: error?.message, variant: 'destructive' });
       }
@@ -324,18 +381,32 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                   const Icon = ICON_OPTIONS.find(opt => opt.value === cat.icon)?.icon || FastfoodIcon;
                   return (
                     <Tooltip title={cat.name} key={cat.id} arrow>
-                      <button
-                        type="button"
-                        onClick={() => handleCategorySelect(cat.id)}
-                        className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
-                          ${formData.category_id === cat.id ? 'border-primary bg-primary/10' : 'border-muted'}
-                          ${categoryGlow === cat.id ? 'border-2 border-dotted border-blue-500 animate-fade-glow' : ''}
-                        `}
-                        style={{ minWidth: 80, minHeight: 80 }}
-                      >
-                        <Icon style={{ fontSize: 32 }} />
-                        <span className="text-xs mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[64px] text-center">{cat.name}</span>
-                      </button>
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          onClick={() => handleCategorySelect(cat.id)}
+                          className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
+                            ${formData.category_id === cat.id ? 'border-primary bg-primary/10' : 'border-muted'}
+                            ${categoryGlow === cat.id ? 'border-2 border-dotted border-blue-500 animate-fade-glow' : ''}
+                          `}
+                          style={{ minWidth: 80, minHeight: 80 }}
+                        >
+                          <Icon style={{ fontSize: 32 }} />
+                          <span className="text-xs mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[64px] text-center">{cat.name}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingCategory(cat);
+                            setShowEditCategoryModal(true);
+                          }}
+                          className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/80"
+                          style={{ width: 20, height: 20 }}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </button>
+                      </div>
                     </Tooltip>
                   );
                 })}
@@ -482,6 +553,70 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                 Cancel
               </Button>
               <Button type="submit">Create</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditCategoryModal} onOpenChange={setShowEditCategoryModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditCategory} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-cat-name">Name</Label>
+              <Input
+                id="edit-cat-name"
+                value={editingCategory?.name || ''}
+                onChange={e => setEditingCategory(c => c ? { ...c, name: e.target.value } : null)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Icon</Label>
+              <div className="grid grid-cols-5 gap-3 mt-4 mb-2">
+                {ICON_OPTIONS.map(opt => {
+                  const Icon = opt.icon;
+                  return (
+                    <button
+                      type="button"
+                      key={opt.value}
+                      className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-lg border transition-all duration-200
+                        ${editingCategory?.icon === opt.value ? 'border-primary bg-primary/10 text-primary' : 'border-muted bg-muted/40 text-muted-foreground hover:text-primary hover:border-primary'}
+                      `}
+                      onClick={() => setEditingCategory(c => c ? { ...c, icon: opt.value } : null)}
+                    >
+                      {editingCategory?.icon === opt.value && (
+                        <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                      <Icon style={{ fontSize: 28 }} />
+                      <span className="text-xs mt-1 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[48px] text-center">{opt.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {!editingCategory?.icon && (
+                <p className="text-xs text-muted-foreground">Please select an icon for your category</p>
+              )}
+            </div>
+            <div className="flex justify-between gap-2">
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={() => editingCategory && handleDeleteCategory(editingCategory.id)}
+                className="flex-1"
+              >
+                Delete
+              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setShowEditCategoryModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Update</Button>
+              </div>
             </div>
           </form>
         </DialogContent>

@@ -9,6 +9,56 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { X, Users } from 'lucide-react';
+import Tooltip from '@mui/material/Tooltip';
+import FastfoodIcon from '@mui/icons-material/Fastfood';
+import LocalDiningIcon from '@mui/icons-material/LocalDining';
+import LocalGroceryStoreIcon from '@mui/icons-material/LocalGroceryStore';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import FlightIcon from '@mui/icons-material/Flight';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import HomeIcon from '@mui/icons-material/Home';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import BeachAccessIcon from '@mui/icons-material/BeachAccess';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import BookIcon from '@mui/icons-material/Book';
+import ComputerIcon from '@mui/icons-material/Computer';
+import LocalMallIcon from '@mui/icons-material/LocalMall';
+import CelebrationIcon from '@mui/icons-material/Celebration';
+import MovieIcon from '@mui/icons-material/Movie';
+import LocalBarIcon from '@mui/icons-material/LocalBar';
+import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+import PetsIcon from '@mui/icons-material/Pets';
+import ChildCareIcon from '@mui/icons-material/ChildCare';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+
+const ICON_OPTIONS = [
+  { name: 'Food', value: 'Fastfood', icon: FastfoodIcon },
+  { name: 'Dining', value: 'LocalDining', icon: LocalDiningIcon },
+  { name: 'Groceries', value: 'LocalGroceryStore', icon: LocalGroceryStoreIcon },
+  { name: 'Transport', value: 'DirectionsCar', icon: DirectionsCarIcon },
+  { name: 'Travel', value: 'Flight', icon: FlightIcon },
+  { name: 'Shopping', value: 'ShoppingCart', icon: ShoppingCartIcon },
+  { name: 'Home', value: 'Home', icon: HomeIcon },
+  { name: 'Utilities', value: 'Lightbulb', icon: LightbulbIcon },
+  { name: 'Health', value: 'LocalHospital', icon: LocalHospitalIcon },
+  { name: 'Vacation', value: 'BeachAccess', icon: BeachAccessIcon },
+  { name: 'Bills', value: 'Receipt', icon: ReceiptIcon },
+  { name: 'Salary', value: 'AttachMoney', icon: AttachMoneyIcon },
+  { name: 'Games', value: 'SportsEsports', icon: SportsEsportsIcon },
+  { name: 'Books', value: 'Book', icon: BookIcon },
+  { name: 'Tech', value: 'Computer', icon: ComputerIcon },
+  { name: 'Mall', value: 'LocalMall', icon: LocalMallIcon },
+  { name: 'Party', value: 'Celebration', icon: CelebrationIcon },
+  { name: 'Movies', value: 'Movie', icon: MovieIcon },
+  { name: 'Bar', value: 'LocalBar', icon: LocalBarIcon },
+  { name: 'Cafe', value: 'LocalCafe', icon: LocalCafeIcon },
+  { name: 'Pets', value: 'Pets', icon: PetsIcon },
+  { name: 'Kids', value: 'ChildCare', icon: ChildCareIcon },
+  { name: 'Fitness', value: 'FitnessCenter', icon: FitnessCenterIcon },
+];
 
 interface Expense {
   id: string;
@@ -18,6 +68,7 @@ interface Expense {
   split_type: string;
   participants: string[];
   home_id: string;
+  category_id?: string;
 }
 
 interface Profile {
@@ -43,19 +94,24 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [homeMembers, setHomeMembers] = useState<HomeMember[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; icon: string }[]>([]);
   
   const [formData, setFormData] = useState({
     title: expense.title,
     amount: expense.amount.toString(),
     description: expense.description,
     selectedParticipants: expense.participants,
+    category_id: expense.category_id || '',
   });
 
   useEffect(() => {
     if (expense.home_id) {
       fetchHomeMembers();
     }
-  }, [expense.home_id]);
+    if (user) {
+      fetchCategories();
+    }
+  }, [expense.home_id, user]);
 
   const fetchHomeMembers = async () => {
     try {
@@ -106,6 +162,16 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
     }
   };
 
+  const fetchCategories = async () => {
+    if (!user) return;
+    const { data, error } = await (supabase as any)
+      .from('categories')
+      .select('id, name, icon')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (!error && data) setCategories(data);
+  };
+
   const handleParticipantToggle = (userId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -137,6 +203,7 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
           amount: parseFloat(formData.amount),
           description: formData.description,
           participants: formData.selectedParticipants,
+          category_id: formData.category_id || null,
           split_type: formData.selectedParticipants.length === 1 ? 'one_person' : 
                      formData.selectedParticipants.length === 2 ? 'two_people' : 'all_three',
           updated_at: new Date().toISOString(),
@@ -237,6 +304,33 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
                 placeholder="Additional details..."
                 className="min-h-[80px] sm:min-h-[60px]"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Category</Label>
+              <div className="flex gap-3 overflow-x-auto pb-4 pt-2">
+                {categories.map(cat => {
+                  const Icon = ICON_OPTIONS.find(opt => opt.value === cat.icon)?.icon || FastfoodIcon;
+                  return (
+                    <Tooltip title={cat.name} key={cat.id} arrow>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, category_id: cat.id }))}
+                        className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
+                          ${formData.category_id === cat.id ? 'border-primary bg-primary/10' : 'border-muted'}
+                        `}
+                        style={{ minWidth: 80, minHeight: 80 }}
+                      >
+                        <Icon style={{ fontSize: 32 }} />
+                        <span className="text-xs mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[64px] text-center">{cat.name}</span>
+                      </button>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+              {categories.length === 0 && (
+                <p className="text-xs text-muted-foreground">No categories available. Create categories in the Add Expense page.</p>
+              )}
             </div>
 
             <div className="space-y-3">
