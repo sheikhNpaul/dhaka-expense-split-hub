@@ -13,7 +13,7 @@ import { MealPlanner } from './MealPlanner';
 import { NotionSidebar } from './NotionSidebar';
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from 'date-fns';
 import { PaymentRequests } from '@/components/PaymentRequests';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -31,17 +31,17 @@ export const Dashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [profile, setProfile] = useState<any>(null);
+  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
   const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Get current tab from URL search params or default to 'expenses'
-  const searchParams = new URLSearchParams(location.search);
   const currentTab = searchParams.get('tab') || 'expenses';
 
   useEffect(() => {
@@ -53,7 +53,11 @@ export const Dashboard = () => {
   // Check if mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarCollapsed(true);
+      }
     };
 
     checkMobile();
@@ -109,6 +113,10 @@ export const Dashboard = () => {
       return startOfMonth(newDate);
     });
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
   };
 
   const renderContent = () => {
@@ -262,10 +270,13 @@ export const Dashboard = () => {
         onProfileUpdate={handleProfileUpdate}
         onAddExpense={() => setShowAddExpense(true)}
         currentHomeId={currentHomeId}
+        onSidebarToggle={handleSidebarToggle}
       />
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col ${isMobile ? 'ml-0' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        isMobile ? 'ml-0' : isSidebarCollapsed ? 'ml-16' : 'ml-64'
+      }`}>
         {/* Top Bar */}
         <div className={`border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
           isMobile ? 'h-20' : 'h-16'

@@ -26,13 +26,15 @@ interface NotionSidebarProps {
   onProfileUpdate: () => void;
   onAddExpense: () => void;
   currentHomeId: string | null;
+  onSidebarToggle?: (collapsed: boolean) => void;
 }
 
 export const NotionSidebar = ({ 
   profile, 
   onProfileUpdate, 
   onAddExpense, 
-  currentHomeId 
+  currentHomeId,
+  onSidebarToggle
 }: NotionSidebarProps) => {
   const { signOut } = useAuth();
   const location = useLocation();
@@ -59,6 +61,13 @@ export const NotionSidebar = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Notify parent component of sidebar state changes
+  useEffect(() => {
+    if (onSidebarToggle) {
+      onSidebarToggle(isCollapsed);
+    }
+  }, [isCollapsed, onSidebarToggle]);
+
   const handleTabChange = (value: string) => {
     const params = new URLSearchParams(location.search);
     params.set('tab', value);
@@ -67,6 +76,11 @@ export const NotionSidebar = ({
     if (isMobile) {
       setIsMobileMenuOpen(false);
     }
+  };
+
+  const handleCollapseToggle = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
   };
 
   const navigationItems = [
@@ -131,7 +145,7 @@ export const NotionSidebar = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleCollapseToggle}
             className="h-8 w-8 p-0"
           >
             {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
