@@ -25,6 +25,7 @@ export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [markingAsRead, setMarkingAsRead] = useState<string | null>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -45,13 +46,14 @@ export const NotificationBell = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
         () => {
-          // Refresh notifications when there are changes
+          // Only refresh on new notifications, not updates
+          console.log('New notification received, refreshing...');
           fetchNotifications();
         }
       )
@@ -86,6 +88,18 @@ export const NotificationBell = () => {
       
       console.log('Fetched notifications:', data?.length || 0, 'notifications');
       console.log('Sample notification:', data?.[0]);
+      
+      // Debug: Log the read status of each notification
+      if (data && data.length > 0) {
+        console.log('Notification read statuses:');
+        data.forEach((notification: any, index: number) => {
+          console.log(`${index + 1}. ID: ${notification.id}, Read: ${notification.read}, Title: ${notification.title}`);
+        });
+        
+        const readCount = data.filter((n: any) => n.read).length;
+        const unreadCount = data.filter((n: any) => !n.read).length;
+        console.log(`Read notifications: ${readCount}, Unread notifications: ${unreadCount}`);
+      }
       
       setNotifications(data || []);
     } catch (error) {
@@ -146,7 +160,14 @@ export const NotificationBell = () => {
   };
 
   const markAsRead = async (notificationId: string) => {
+    // Prevent multiple calls on the same notification
+    if (markingAsRead === notificationId) {
+      console.log('Already marking notification as read:', notificationId);
+      return;
+    }
+
     try {
+      setMarkingAsRead(notificationId);
       console.log('Marking notification as read:', notificationId);
       console.log('Current user:', user?.id);
       
@@ -157,6 +178,8 @@ export const NotificationBell = () => {
         return;
       }
       
+      console.log('Notification current read status:', notification?.read);
+      
       // First, update local state immediately for better UX
       setNotifications(prev => 
         prev.map(n => 
@@ -164,6 +187,7 @@ export const NotificationBell = () => {
         )
       );
       
+      console.log('Sending database update for notification:', notificationId);
       const { data, error } = await (supabase as any)
         .from('notifications')
         .update({ read: true })
@@ -178,6 +202,7 @@ export const NotificationBell = () => {
         return;
       }
 
+      console.log('Database update response:', data);
       console.log('Successfully marked notification as read:', data);
       
       // Only refresh if the database update was successful
@@ -186,9 +211,20 @@ export const NotificationBell = () => {
         await fetchNotifications();
       } else {
         console.log('No rows updated, notification might not exist or already be read');
+        // Let's verify the current state in the database
+        const { data: verifyData } = await (supabase as any)
+          .from('notifications')
+          .select('read')
+          .eq('id', notificationId)
+          .eq('user_id', user?.id)
+          .single();
+        
+        console.log('Current database state for notification:', verifyData);
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    } finally {
+      setMarkingAsRead(null);
     }
   };
 
@@ -300,11 +336,13 @@ export const NotificationBell = () => {
                     notification.read 
                       ? 'bg-muted/50 hover:bg-muted' 
                       : 'bg-primary/10 hover:bg-primary/20'
-                  }`}
+                  } ${markingAsRead === notification.id ? 'opacity-50 pointer-events-none' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    markAsRead(notification.id);
+                    if (markingAsRead !== notification.id && !notification.read) {
+                      markAsRead(notification.id);
+                    }
                   }}
                 >
                   <div className="flex items-start gap-3">
