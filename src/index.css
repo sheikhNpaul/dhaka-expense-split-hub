@@ -84,6 +84,28 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Prevent horizontal scroll on mobile */
+    overflow-x: hidden;
+    /* Improve touch scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile-specific base styles */
+  @media (max-width: 768px) {
+    html {
+      font-size: 14px; /* Slightly smaller base font for mobile */
+    }
+    
+    /* Ensure proper viewport handling */
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+    
+    /* Prevent zoom on input focus on iOS */
+    input, select, textarea {
+      font-size: 16px;
+    }
   }
 }
 
@@ -106,10 +128,39 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
+/* Mobile scrollbar adjustments */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+  }
+}
+
 /* Notion-like focus styles */
 .focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
+}
+
+/* Mobile focus styles */
+@media (max-width: 768px) {
+  .focus-visible {
+    outline: none;
+  }
+  
+  /* Use touch-friendly focus indicators on mobile */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 /* Notion-like transitions */
@@ -128,10 +179,29 @@
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
 }
 
+/* Mobile shadow adjustments */
+@media (max-width: 768px) {
+  .shadow-notion {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  
+  .dark .shadow-notion {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+  }
+}
+
 /* Notion-like backdrop blur */
 .backdrop-blur-notion {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+/* Mobile backdrop blur adjustments */
+@media (max-width: 768px) {
+  .backdrop-blur-notion {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
 }
 
 /* Custom utility classes for Notion-like styling */
@@ -150,5 +220,78 @@
   
   .hover-notion:hover {
     background-color: hsl(var(--accent));
+  }
+
+  /* Mobile-specific utilities */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .mobile-padding {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .mobile-safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Mobile text utilities */
+  .mobile-text-sm {
+    @media (max-width: 768px) {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+  }
+  
+  .mobile-text-xs {
+    @media (max-width: 768px) {
+      font-size: 0.75rem;
+      line-height: 1rem;
+    }
+  }
+  
+  /* Mobile spacing utilities */
+  .mobile-space-y-2 {
+    @media (max-width: 768px) {
+      --tw-space-y-reverse: 0;
+      margin-top: calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));
+      margin-bottom: calc(0.5rem * var(--tw-space-y-reverse));
+    }
+  }
+  
+  .mobile-space-y-4 {
+    @media (max-width: 768px) {
+      --tw-space-y-reverse: 0;
+      margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse)));
+      margin-bottom: calc(1rem * var(--tw-space-y-reverse));
+    }
+  }
+}
+
+/* Mobile-specific component styles */
+@media (max-width: 768px) {
+  /* Improve button touch targets */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve card spacing on mobile */
+  .card {
+    margin-bottom: 1rem;
+  }
+  
+  /* Better mobile form inputs */
+  input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* Mobile-friendly modal adjustments */
+  .modal-content {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
   }
 }

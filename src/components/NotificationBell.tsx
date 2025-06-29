@@ -26,6 +26,7 @@ export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [markingAsRead, setMarkingAsRead] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -36,6 +37,17 @@ export const NotificationBell = () => {
       addTestNotification();
     }
   }, [user]);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Set up real-time subscription for notifications
   useEffect(() => {
@@ -242,29 +254,40 @@ export const NotificationBell = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:scale-105 transition-transform"
+          className={`relative touch-target ${
+            isMobile 
+              ? 'h-10 w-10 rounded-lg' 
+              : 'h-9 w-9 sm:h-10 sm:w-10 rounded-full'
+          } hover:scale-105 transition-transform`}
         >
-          <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+          <Bell className={`${isMobile ? 'h-5 w-5' : 'h-4 w-4 sm:h-5 sm:w-5'}`} />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs font-bold"
+              className={`absolute -top-1 -right-1 rounded-full p-0 flex items-center justify-center text-xs font-bold ${
+                isMobile ? 'h-6 w-6' : 'h-5 w-5'
+              }`}
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent 
+        className={`p-0 ${isMobile ? 'w-[calc(100vw-2rem)] max-w-sm' : 'w-80'}`} 
+        align={isMobile ? "center" : "end"}
+        side={isMobile ? "bottom" : "bottom"}
+        sideOffset={isMobile ? 8 : 4}
+      >
         <div className="flex items-center justify-between p-4 border-b">
-          <h4 className="font-semibold">Notifications</h4>
+          <h4 className="font-semibold text-sm sm:text-base">Notifications</h4>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={markAllAsRead}
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-xs text-muted-foreground hover:text-foreground touch-target"
               >
                 Mark all as read
               </Button>
@@ -272,7 +295,7 @@ export const NotificationBell = () => {
           </div>
         </div>
         
-        <ScrollArea className="h-80">
+        <ScrollArea className={`${isMobile ? 'h-96' : 'h-80'}`}>
           {loading ? (
             <div className="p-4 text-center text-muted-foreground">
               Loading notifications...
@@ -286,7 +309,7 @@ export const NotificationBell = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-3 rounded-lg mb-2 cursor-pointer transition-colors ${
+                  className={`p-3 rounded-lg mb-2 cursor-pointer transition-colors touch-target ${
                     notification.read 
                       ? 'bg-muted/50 hover:bg-muted' 
                       : 'bg-primary/10 hover:bg-primary/20'
@@ -300,17 +323,17 @@ export const NotificationBell = () => {
                   }}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-lg">{getNotificationIcon(notification.type)}</span>
+                    <span className="text-lg flex-shrink-0">{getNotificationIcon(notification.type)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h5 className={`font-medium text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        <h5 className={`font-medium text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'} truncate`}>
                           {notification.title}
                         </h5>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
                           {formatTime(notification.created_at)}
                         </span>
                       </div>
-                      <p className={`text-sm mt-1 ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      <p className={`text-sm mt-1 ${!notification.read ? 'text-foreground' : 'text-muted-foreground'} line-clamp-2`}>
                         {notification.message}
                       </p>
                     </div>
