@@ -108,7 +108,7 @@ export const NotionSidebar = ({
       <div className={`flex items-center justify-between border-b border-border ${
         isMobile ? 'h-20 px-6' : 'h-16 px-4'
       }`}>
-        {!isCollapsed && (
+        {(isMobile || !isCollapsed) && (
           <div className="flex items-center space-x-3">
             <div className={`rounded-lg bg-primary flex items-center justify-center ${
               isMobile ? 'h-12 w-12' : 'h-8 w-8'
@@ -163,14 +163,14 @@ export const NotionSidebar = ({
                 <Icon className={`mr-3 ${
                   isMobile ? 'h-5 w-5' : 'h-4 w-4'
                 }`} />
-                {!isCollapsed && <span>{item.label}</span>}
+                {(isMobile || !isCollapsed) && <span>{item.label}</span>}
               </Button>
             );
           })}
         </div>
 
         {/* Quick Actions */}
-        {!isCollapsed && currentHomeId && (
+        {(isMobile || !isCollapsed) && currentHomeId && (
           <div className="mt-8 pt-6 border-t border-border">
             <h3 className={`font-medium text-muted-foreground mb-4 px-3 ${
               isMobile ? 'text-base' : 'text-xs'
@@ -202,7 +202,7 @@ export const NotionSidebar = ({
         {/* User Profile */}
         <div className="flex items-center space-x-3">
           <UserProfile profile={profile} onProfileUpdate={onProfileUpdate} />
-          {!isCollapsed && (
+          {(isMobile || !isCollapsed) && (
             <div className="flex-1 min-w-0">
               <p className={`font-medium truncate ${
                 isMobile ? 'text-base' : 'text-sm'
@@ -222,7 +222,7 @@ export const NotionSidebar = ({
         <div className="flex items-center space-x-3">
           <ThemeToggle />
           <NotificationBell />
-          {!isCollapsed && (
+          {(isMobile || !isCollapsed) && (
             <Button
               variant="ghost"
               size="sm"
