@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { X, Users } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 interface Expense {
   id: string;
@@ -104,15 +105,6 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
         variant: "destructive",
       });
     }
-  };
-
-  const handleParticipantToggle = (userId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedParticipants: prev.selectedParticipants.includes(userId)
-        ? prev.selectedParticipants.filter(id => id !== userId)
-        : [...prev.selectedParticipants, userId]
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -242,24 +234,39 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
             <div className="space-y-3">
               <Label className="flex items-center gap-2 text-sm font-medium">
                 <Users className="h-4 w-4" />
-                Split with home members
+                Split with all home members
+                <Switch
+                  checked={formData.selectedParticipants.length === homeMembers.length && homeMembers.length > 0}
+                  onCheckedChange={(checked) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      selectedParticipants: checked
+                        ? homeMembers.map(m => m.user_id)
+                        : user ? [user.id] : []
+                    }));
+                  }}
+                  className="ml-3"
+                />
               </Label>
-              <div className="space-y-3 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
+              <div className="space-y-1 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
                 {homeMembers.map(member => (
-                  <div key={member.user_id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                    <Checkbox
-                      id={member.user_id}
-                      checked={formData.selectedParticipants.includes(member.user_id)}
-                      onCheckedChange={() => handleParticipantToggle(member.user_id)}
-                      className="h-5 w-5 sm:h-4 sm:w-4"
-                    />
-                    <Label 
-                      htmlFor={member.user_id} 
-                      className="flex-1 cursor-pointer text-sm"
-                    >
+                  <div key={member.user_id} className="flex items-center justify-between p-1 rounded hover:bg-muted/50 transition-colors">
+                    <div className="flex-1 min-w-0 text-sm truncate">
                       {member.profile.name || member.profile.email}
                       {member.user_id === user?.id && " (You)"}
-                    </Label>
+                    </div>
+                    <Switch
+                      checked={formData.selectedParticipants.includes(member.user_id)}
+                      onCheckedChange={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          selectedParticipants: prev.selectedParticipants.includes(member.user_id)
+                            ? prev.selectedParticipants.filter(id => id !== member.user_id)
+                            : [...prev.selectedParticipants, member.user_id]
+                        }));
+                      }}
+                      className="ml-2"
+                    />
                   </div>
                 ))}
               </div>
