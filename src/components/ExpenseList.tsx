@@ -7,6 +7,29 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow, startOfMonth, endOfMonth, format } from 'date-fns';
 import { Edit, MessageCircle, Clock, Users, Calendar } from 'lucide-react';
+import FastfoodIcon from '@mui/icons-material/Fastfood';
+import LocalDiningIcon from '@mui/icons-material/LocalDining';
+import LocalGroceryStoreIcon from '@mui/icons-material/LocalGroceryStore';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import FlightIcon from '@mui/icons-material/Flight';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import HomeIcon from '@mui/icons-material/Home';
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import BeachAccessIcon from '@mui/icons-material/BeachAccess';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import BookIcon from '@mui/icons-material/Book';
+import ComputerIcon from '@mui/icons-material/Computer';
+import LocalMallIcon from '@mui/icons-material/LocalMall';
+import CelebrationIcon from '@mui/icons-material/Celebration';
+import MovieIcon from '@mui/icons-material/Movie';
+import LocalBarIcon from '@mui/icons-material/LocalBar';
+import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+import PetsIcon from '@mui/icons-material/Pets';
+import ChildCareIcon from '@mui/icons-material/ChildCare';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 
 interface Expense {
   id: string;
@@ -18,6 +41,13 @@ interface Expense {
   created_at: string;
   payer_id: string;
   home_id: string;
+  category_id?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
 }
 
 interface Profile {
@@ -36,10 +66,37 @@ interface ExpenseListProps {
   onMonthChange: (date: Date) => void;
 }
 
+const ICON_OPTIONS = [
+  { name: 'Food', value: 'Fastfood', icon: FastfoodIcon },
+  { name: 'Dining', value: 'LocalDining', icon: LocalDiningIcon },
+  { name: 'Groceries', value: 'LocalGroceryStore', icon: LocalGroceryStoreIcon },
+  { name: 'Transport', value: 'DirectionsCar', icon: DirectionsCarIcon },
+  { name: 'Travel', value: 'Flight', icon: FlightIcon },
+  { name: 'Shopping', value: 'ShoppingCart', icon: ShoppingCartIcon },
+  { name: 'Home', value: 'Home', icon: HomeIcon },
+  { name: 'Utilities', value: 'Lightbulb', icon: LightbulbIcon },
+  { name: 'Health', value: 'LocalHospital', icon: LocalHospitalIcon },
+  { name: 'Vacation', value: 'BeachAccess', icon: BeachAccessIcon },
+  { name: 'Bills', value: 'Receipt', icon: ReceiptIcon },
+  { name: 'Salary', value: 'AttachMoney', icon: AttachMoneyIcon },
+  { name: 'Games', value: 'SportsEsports', icon: SportsEsportsIcon },
+  { name: 'Books', value: 'Book', icon: BookIcon },
+  { name: 'Tech', value: 'Computer', icon: ComputerIcon },
+  { name: 'Mall', value: 'LocalMall', icon: LocalMallIcon },
+  { name: 'Party', value: 'Celebration', icon: CelebrationIcon },
+  { name: 'Movies', value: 'Movie', icon: MovieIcon },
+  { name: 'Bar', value: 'LocalBar', icon: LocalBarIcon },
+  { name: 'Cafe', value: 'LocalCafe', icon: LocalCafeIcon },
+  { name: 'Pets', value: 'Pets', icon: PetsIcon },
+  { name: 'Kids', value: 'ChildCare', icon: ChildCareIcon },
+  { name: 'Fitness', value: 'FitnessCenter', icon: FitnessCenterIcon },
+];
+
 export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, currentHomeId, selectedMonth }: ExpenseListProps) => {
   const { user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [categories, setCategories] = useState<Record<string, Category>>({});
   const [loading, setLoading] = useState(true);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
 
@@ -47,6 +104,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
     if (user && currentHomeId) {
       fetchExpenses();
       fetchProfiles();
+      fetchCategories();
     }
   }, [user, refreshTrigger, currentHomeId, selectedMonth]);
 
@@ -95,16 +153,44 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
     }
   };
 
+  const fetchCategories = async () => {
+    if (!user) return;
+    const { data, error } = await (supabase as any)
+      .from('categories')
+      .select('id, name, icon')
+      .eq('user_id', user.id);
+    if (!error && data) {
+      const categoryMap = data.reduce((acc, category) => {
+        acc[category.id] = category;
+        return acc;
+      }, {} as Record<string, Category>);
+      setCategories(categoryMap);
+    }
+  };
+
+  const getCategoryIcon = (categoryId: string) => {
+    const category = categories[categoryId];
+    if (!category) return FastfoodIcon;
+    
+    const iconOption = ICON_OPTIONS.find(opt => opt.value === category.icon);
+    return iconOption?.icon || FastfoodIcon;
+  };
+
+  const getCategoryName = (categoryId: string) => {
+    const category = categories[categoryId];
+    return category?.name || 'Uncategorized';
+  };
+
   const getSplitTypeLabel = (participantCount: number) => {
     switch (participantCount) {
       case 1:
         return 'Personal';
       case 2:
-        return '2 people';
+        return '2 participants';
       case 3:
-        return '3 people';
+        return '3 participants';
       default:
-        return `${participantCount} people`;
+        return `${participantCount} participants`;
     }
   };
 
@@ -187,12 +273,17 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                 
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-4">
+                  {expense.category_id && (
+                    <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                      {(() => {
+                        const Icon = getCategoryIcon(expense.category_id);
+                        return <Icon style={{ fontSize: 12 }} />;
+                      })()}
+                      {getCategoryName(expense.category_id)}
+                    </Badge>
+                  )}
                   <Badge className={`${getSplitTypeColor(expense.participants.length)} text-xs`}>
                     {getSplitTypeLabel(expense.participants.length)}
-                  </Badge>
-                  <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                    <Users className="h-3 w-3" />
-                    {expense.participants.length} participant{expense.participants.length > 1 ? 's' : ''}
                   </Badge>
                 </div>
 
