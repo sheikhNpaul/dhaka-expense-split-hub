@@ -34,6 +34,7 @@ import PetsIcon from '@mui/icons-material/Pets';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const ICON_OPTIONS = [
   { name: 'Food', value: 'Fastfood', icon: FastfoodIcon },
@@ -76,6 +77,7 @@ interface Profile {
   id: string;
   name: string;
   email: string;
+  avatar_url?: string;
 }
 
 interface HomeMember {
@@ -133,7 +135,7 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
         const userIds = membersData.map(member => member.user_id);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, name, email')
+          .select('id, name, email, avatar_url')
           .in('id', userIds);
 
         if (profilesError) {
@@ -351,9 +353,49 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
                   className="ml-3"
                 />
               </Label>
-              <div className="space-y-1 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
+              <div className="block sm:hidden">
+                <div className="flex gap-3 overflow-x-auto p-2 bg-muted/30 rounded-lg">
+                  {homeMembers.map(member => {
+                    const selected = formData.selectedParticipants.includes(member.user_id);
+                    const initials = (member.profile.name || member.profile.email || '?')
+                      .split(' ')
+                      .map(word => word[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+                    return (
+                      <button
+                        key={member.user_id}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedParticipants: prev.selectedParticipants.includes(member.user_id)
+                              ? prev.selectedParticipants.filter(id => id !== member.user_id)
+                              : [...prev.selectedParticipants, member.user_id]
+                          }));
+                        }}
+                        className={`relative focus:outline-none ${selected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                        style={{ borderRadius: '50%' }}
+                      >
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={member.profile.avatar_url || undefined} alt={member.profile.name || member.profile.email} />
+                          <AvatarFallback>{initials}</AvatarFallback>
+                        </Avatar>
+                        {member.user_id === user?.id && (
+                          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground rounded px-1">You</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Tap avatars to select members. Selected: {formData.selectedParticipants.length}
+                </p>
+              </div>
+              <div className="hidden sm:block space-y-1 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
                 {homeMembers.map(member => (
-                  <div key={member.user_id} className="flex items-center justify-between p-1 rounded hover:bg-muted/50 transition-colors">
+                  <div key={member.user_id} className="flex items-center gap-2 h-10 rounded hover:bg-muted/50 transition-colors px-2">
                     <div className="flex-1 min-w-0 text-sm truncate">
                       {member.profile.name || member.profile.email}
                       {member.user_id === user?.id && " (You)"}

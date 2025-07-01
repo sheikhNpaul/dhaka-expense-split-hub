@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { X, Users, Plus, Check, Edit } from 'lucide-react';
+import { X, Users, Plus, Check, Edit, MoreHorizontal } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Tooltip from '@mui/material/Tooltip';
 import FastfoodIcon from '@mui/icons-material/Fastfood';
@@ -35,11 +35,14 @@ import PetsIcon from '@mui/icons-material/Pets';
 import ChildCareIcon from '@mui/icons-material/ChildCare';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { Switch } from '@/components/ui/switch';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Profile {
   id: string;
   name: string;
   email: string;
+  avatar_url?: string;
 }
 
 interface HomeMember {
@@ -93,6 +96,10 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
   const [editingCategory, setEditingCategory] = useState<{ id: string; name: string; icon: string } | null>(null);
   const [showEditCategoryModal, setShowEditCategoryModal] = useState(false);
   const glowTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [userEditedCategoryName, setUserEditedCategoryName] = useState(false);
+  const [showCategoryActionModal, setShowCategoryActionModal] = useState(false);
+  const [categoryActionTarget, setCategoryActionTarget] = useState(null);
+  const longPressTimeout = useRef(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -130,7 +137,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
         const userIds = membersData.map(member => member.user_id);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, name, email')
+          .select('id, name, email, avatar_url')
           .in('id', userIds);
 
         if (profilesError) {
@@ -294,6 +301,19 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
 
     setLoading(true);
     try {
+      console.log("Expense payload:", {
+        title: formData.title,
+        amount: parseFloat(formData.amount),
+        description: formData.description,
+        payer_id: user.id,
+        participants: formData.selectedParticipants,
+        home_id: currentHomeId,
+        created_at: defaultDate ? new Date(defaultDate).toISOString() : new Date().toISOString(),
+        split_type: formData.selectedParticipants.length === 1 ? 'one_person' : 
+                   formData.selectedParticipants.length === 2 ? 'two_people' : 'all_three',
+        category_id: formData.category_id || null,
+      });
+
       const { error } = await supabase
         .from('expenses')
         .insert({
@@ -306,7 +326,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
           created_at: defaultDate ? new Date(defaultDate).toISOString() : new Date().toISOString(),
           split_type: formData.selectedParticipants.length === 1 ? 'one_person' : 
                      formData.selectedParticipants.length === 2 ? 'two_people' : 'all_three',
-          category_id: formData.category_id,
+          category_id: formData.category_id || null,
         });
 
       if (error) throw error;
@@ -352,6 +372,12 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
     }
   };
 
+  const handleOpenCategoryModal = () => {
+    setUserEditedCategoryName(false);
+    setNewCategory({ name: '', icon: '' });
+    setShowCategoryModal(true);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
       <Card className="w-full max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
@@ -382,19 +408,35 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                   const Icon = ICON_OPTIONS.find(opt => opt.value === cat.icon)?.icon || FastfoodIcon;
                   return (
                     <Tooltip title={cat.name} key={cat.id} arrow>
-                      <div className="relative group">
-                        <button
-                          type="button"
-                          onClick={() => handleCategorySelect(cat.id)}
-                          className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
-                            ${formData.category_id === cat.id ? 'border-primary bg-primary/10' : 'border-muted'}
-                            ${categoryGlow === cat.id ? 'border-2 border-dotted border-blue-500 animate-fade-glow' : ''}
-                          `}
-                          style={{ minWidth: 80, minHeight: 80 }}
-                        >
+                      <div
+                        className={`relative group flex flex-col sm:flex-col items-stretch sm:items-center justify-center w-20 h-20 sm:w-20 sm:h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
+                          ${formData.category_id === cat.id ? 'border-primary bg-primary/10' : 'border-muted'}
+                          ${categoryGlow === cat.id ? 'border-2 border-dotted border-blue-500 animate-fade-glow' : ''}
+                          sm:w-20 sm:h-20
+                        `}
+                        style={{ minWidth: 80, minHeight: 80 }}
+                        onTouchStart={e => {
+                          if (window.innerWidth < 640) {
+                            longPressTimeout.current = setTimeout(() => {
+                              setCategoryActionTarget(cat);
+                              setShowCategoryActionModal(true);
+                            }, 500);
+                          }
+                        }}
+                        onTouchEnd={e => {
+                          if (window.innerWidth < 640) {
+                            clearTimeout(longPressTimeout.current);
+                          }
+                        }}
+                        onTouchMove={e => {
+                          if (window.innerWidth < 640) {
+                            clearTimeout(longPressTimeout.current);
+                          }
+                        }}
+                      >
+                        <div className="flex flex-col items-center justify-center w-full h-full">
                           <Icon style={{ fontSize: 32 }} />
-                          <span className="text-xs mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[64px] text-center">{cat.name}</span>
-                        </button>
+                        </div>
                         <button
                           type="button"
                           onClick={(e) => {
@@ -402,7 +444,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                             setEditingCategory(cat);
                             setShowEditCategoryModal(true);
                           }}
-                          className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-primary/80"
+                          className="hidden sm:absolute sm:-top-1 sm:-right-1 sm:bg-primary sm:text-primary-foreground sm:rounded-full sm:p-1 sm:shadow-md sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity sm:duration-200 sm:hover:bg-primary/80 sm:z-10"
                           style={{ width: 20, height: 20 }}
                         >
                           <Edit className="h-3 w-3" />
@@ -414,7 +456,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                 <Tooltip title="Add Category" arrow>
                   <button
                     type="button"
-                    onClick={() => setShowCategoryModal(true)}
+                    onClick={handleOpenCategoryModal}
                     className="flex flex-col items-center justify-center w-20 h-20 rounded-lg border border-dashed border-muted text-muted-foreground hover:text-primary hover:border-primary bg-muted/40 transition-all duration-200 p-0"
                     style={{ minWidth: 80, minHeight: 80 }}
                     aria-label="Create new category"
@@ -481,9 +523,49 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                   className="ml-3"
                 />
               </Label>
-              <div className="space-y-1 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
+              <div className="block sm:hidden">
+                <div className="flex gap-3 overflow-x-auto p-2 bg-muted/30 rounded-lg">
+                  {homeMembers.map(member => {
+                    const selected = formData.selectedParticipants.includes(member.user_id);
+                    const initials = (member.profile.name || member.profile.email || '?')
+                      .split(' ')
+                      .map(word => word[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2);
+                    return (
+                      <button
+                        key={member.user_id}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            selectedParticipants: prev.selectedParticipants.includes(member.user_id)
+                              ? prev.selectedParticipants.filter(id => id !== member.user_id)
+                              : [...prev.selectedParticipants, member.user_id]
+                          }));
+                        }}
+                        className={`relative focus:outline-none ${selected ? 'ring-4 ring-primary/80 ring-offset-2' : ''}`}
+                        style={{ borderRadius: '50%' }}
+                      >
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={member.profile.avatar_url || undefined} alt={member.profile.name || member.profile.email} />
+                          <AvatarFallback>{initials}</AvatarFallback>
+                        </Avatar>
+                        {member.user_id === user?.id && (
+                          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground rounded px-1">You</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Tap avatars to select members. Selected: {formData.selectedParticipants.length}
+                </p>
+              </div>
+              <div className="hidden sm:block space-y-1 max-h-40 sm:max-h-32 overflow-y-auto p-2 bg-muted/30 rounded-lg">
                 {homeMembers.map(member => (
-                  <div key={member.user_id} className="flex items-center justify-between p-1 rounded hover:bg-muted/50 transition-colors">
+                  <div key={member.user_id} className="flex items-center gap-2 h-10 rounded hover:bg-muted/50 transition-colors px-2">
                     <div className="flex-1 min-w-0 text-sm truncate">
                       {member.profile.name || member.profile.email}
                       {member.user_id === user?.id && " (You)"}
@@ -531,7 +613,10 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
               <Input
                 id="cat-name"
                 value={newCategory.name}
-                onChange={e => setNewCategory(c => ({ ...c, name: e.target.value }))}
+                onChange={e => {
+                  setNewCategory(c => ({ ...c, name: e.target.value }));
+                  setUserEditedCategoryName(true);
+                }}
                 required
               />
             </div>
@@ -547,7 +632,12 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                       className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-lg border transition-all duration-200
                         ${newCategory.icon === opt.value ? 'border-primary bg-primary/10 text-primary' : 'border-muted bg-muted/40 text-muted-foreground hover:text-primary hover:border-primary'}
                       `}
-                      onClick={() => setNewCategory(c => ({ ...c, icon: opt.value }))}
+                      onClick={() => {
+                        setNewCategory(c => {
+                          const iconName = opt.name;
+                          return userEditedCategoryName ? { ...c, icon: opt.value } : { ...c, icon: opt.value, name: iconName };
+                        });
+                      }}
                     >
                       {newCategory.icon === opt.value && (
                         <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
@@ -555,7 +645,6 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                         </div>
                       )}
                       <Icon style={{ fontSize: 28 }} />
-                      <span className="text-xs mt-1 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[48px] text-center">{opt.name}</span>
                     </button>
                   );
                 })}
@@ -609,7 +698,6 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                         </div>
                       )}
                       <Icon style={{ fontSize: 28 }} />
-                      <span className="text-xs mt-1 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[48px] text-center">{opt.name}</span>
                     </button>
                   );
                 })}
@@ -637,6 +725,36 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
           </form>
         </DialogContent>
       </Dialog>
+
+      {showCategoryActionModal && categoryActionTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-card rounded-lg shadow-lg p-6 w-64 flex flex-col gap-4">
+            <div className="text-center font-semibold text-lg mb-2">Category Actions</div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditingCategory(categoryActionTarget);
+                setShowEditCategoryModal(true);
+                setShowCategoryActionModal(false);
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                handleDeleteCategory(categoryActionTarget.id);
+                setShowCategoryActionModal(false);
+              }}
+            >
+              Delete
+            </Button>
+            <Button variant="ghost" onClick={() => setShowCategoryActionModal(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
