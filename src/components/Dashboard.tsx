@@ -282,11 +282,11 @@ export const Dashboard = () => {
           isMobile ? 'h-20' : 'h-16'
         }`}>
           <div className={`flex h-full items-center ${
-            isMobile ? 'px-6 ml-20' : 'px-6'
-          }`}>
+            isMobile ? 'px-6' : 'px-6'
+          } justify-start`}>
             <div className="flex items-center space-x-4">
               <h2 className={`font-semibold capitalize ${
-                isMobile ? 'text-lg' : 'text-lg'
+                isMobile ? 'text-lg text-left' : 'text-lg'
               }`}>
                 {currentTab === 'homes' && 'Homes'}
                 {currentTab === 'expenses' && 'Expenses'}

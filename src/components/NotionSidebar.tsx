@@ -119,28 +119,40 @@ export const NotionSidebar = ({
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className={`flex items-center justify-between border-b border-border ${
-        isMobile ? 'h-20 px-6' : 'h-16 px-4'
+      <div className={`flex items-center border-b border-border ${
+        isMobile ? 'h-20 px-4 justify-between' : 'h-16 px-4 justify-between'
       }`}>
-        {(isMobile || !isCollapsed) && (
-          <div className="flex items-center space-x-3">
-            <div className={`rounded-lg bg-primary flex items-center justify-center ${
-              isMobile ? 'h-12 w-12' : 'h-8 w-8'
-            }`}>
-              <span className={`text-primary-foreground font-bold ${
-                isMobile ? 'text-lg' : 'text-sm'
-              }`}>ET</span>
-            </div>
-            <div>
-              <h1 className={`font-semibold ${
-                isMobile ? 'text-lg' : 'text-sm'
-              }`}>Expense Tracker</h1>
-              <p className={`text-muted-foreground ${
-                isMobile ? 'text-sm' : 'text-xs'
-              }`}>Manage expenses</p>
-            </div>
-          </div>
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-12 w-12 p-0 bg-background/95 backdrop-blur border border-border shadow-lg rounded-xl"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
         )}
+        <div className="flex-1 flex justify-center">
+          {(isMobile || !isCollapsed) && (
+            <div className="flex items-center space-x-3">
+              <div className={`rounded-lg bg-primary flex items-center justify-center ${
+                isMobile ? 'h-12 w-12' : 'h-8 w-8'
+              }`}>
+                <span className={`text-primary-foreground font-bold ${
+                  isMobile ? 'text-lg' : 'text-sm'
+                }`}>ET</span>
+              </div>
+              <div>
+                <h1 className={`font-semibold ${
+                  isMobile ? 'text-lg' : 'text-sm'
+                }`}>Expense Tracker</h1>
+                <p className={`text-muted-foreground ${
+                  isMobile ? 'text-sm' : 'text-xs'
+                }`}>Manage expenses</p>
+              </div>
+            </div>
+          )}
+        </div>
         {!isMobile && (
           <Button
             variant="ghost"
@@ -278,12 +290,12 @@ export const NotionSidebar = ({
             <Button
               variant="ghost"
               size="sm"
-              className="fixed top-4 left-4 z-50 h-12 w-12 p-0 bg-background/95 backdrop-blur border border-border shadow-lg rounded-xl"
+              className="fixed top-4 right-4 z-50 h-12 w-12 p-0 bg-background/95 backdrop-blur border border-border shadow-lg rounded-xl"
             >
               <Menu className="h-6 w-6" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-full max-w-sm p-0">
+          <SheetContent side="right" className="w-full max-w-sm p-0">
             <SidebarContent />
           </SheetContent>
         </Sheet>
