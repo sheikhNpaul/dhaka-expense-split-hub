@@ -270,7 +270,7 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        <CardContent className="px-4 sm:px-6">
+        <CardContent className="px-4 sm:px-6 overflow-y-auto max-h-[80vh]">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm font-medium">Title</Label>
@@ -311,22 +311,22 @@ export const EditExpense = ({ expense, onClose, onExpenseUpdated }: EditExpenseP
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">Category</Label>
-              <div className="flex gap-3 overflow-x-auto pb-4 pt-2">
+              <div className="flex gap-3 overflow-x-auto touch-pan-x pb-4 pt-2">
                 {categories.map(cat => {
                   const Icon = ICON_OPTIONS.find(opt => opt.value === cat.icon)?.icon || FastfoodIcon;
                   return (
                     <Tooltip title={cat.name} key={cat.id} arrow>
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, category_id: cat.id }))}
-                        className={`flex flex-col items-center justify-center w-20 h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
+                      <div
+                        className={`relative group flex flex-col sm:flex-col items-stretch sm:items-center justify-center w-20 h-20 sm:w-20 sm:h-20 rounded-lg border transition-all duration-200 text-lg focus:outline-none bg-muted/40
                           ${formData.category_id === cat.id ? 'border-primary bg-primary/10' : 'border-muted'}
+                          sm:w-20 sm:h-20
                         `}
                         style={{ minWidth: 80, minHeight: 80 }}
+                        onClick={() => setFormData(prev => ({ ...prev, category_id: cat.id }))}
                       >
                         <Icon style={{ fontSize: 32 }} />
                         <span className="text-xs mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap block max-w-[64px] text-center">{cat.name}</span>
-                      </button>
+                      </div>
                     </Tooltip>
                   );
                 })}

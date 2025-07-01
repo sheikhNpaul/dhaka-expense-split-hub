@@ -403,7 +403,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
 
             <div className="space-y-2">
               <Label className="text-sm font-medium">Category</Label>
-              <div className="flex gap-3 overflow-x-auto pb-4 pt-2">
+              <div className="flex gap-3 overflow-x-auto touch-pan-x pb-4 pt-2">
                 {categories.map(cat => {
                   const Icon = ICON_OPTIONS.find(opt => opt.value === cat.icon)?.icon || FastfoodIcon;
                   return (
@@ -415,6 +415,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                           sm:w-20 sm:h-20
                         `}
                         style={{ minWidth: 80, minHeight: 80 }}
+                        onClick={() => handleCategorySelect(cat.id)}
                         onTouchStart={e => {
                           if (window.innerWidth < 640) {
                             longPressTimeout.current = setTimeout(() => {
