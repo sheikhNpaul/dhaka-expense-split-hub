@@ -335,8 +335,8 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger, onMo
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Day headers */}
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1 sm:p-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                <div key={day + idx} className="text-center text-xs font-medium text-muted-foreground p-1 sm:p-2">
                   {day}
                 </div>
               ))}
