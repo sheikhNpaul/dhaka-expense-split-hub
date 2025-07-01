@@ -100,6 +100,13 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
   const [loading, setLoading] = useState(true);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
 
+  // Filter: Only show expenses where user is payer or participant
+  const visibleExpenses = expenses.filter(
+    (expense) =>
+      expense.payer_id === user?.id ||
+      expense.participants.includes(user?.id)
+  );
+
   useEffect(() => {
     if (user && currentHomeId) {
       fetchExpenses();
@@ -107,6 +114,11 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
       fetchCategories();
     }
   }, [user, refreshTrigger, currentHomeId, selectedMonth]);
+
+  // Calculate monthly total for visible expenses only
+  useEffect(() => {
+    setMonthlyTotal(visibleExpenses.reduce((sum, expense) => sum + expense.amount, 0));
+  }, [visibleExpenses]);
 
   const fetchExpenses = async () => {
     if (!user || !currentHomeId) return;
@@ -130,7 +142,6 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
 
       if (data) {
         setExpenses(data);
-        setMonthlyTotal(data.reduce((sum, expense) => sum + expense.amount, 0));
       }
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -240,7 +251,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
             <p className="text-muted-foreground">Loading expenses...</p>
           </div>
         </div>
-      ) : expenses.length === 0 ? (
+      ) : visibleExpenses.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Calendar className="h-8 w-8 text-muted-foreground" />
@@ -250,7 +261,7 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
         </div>
       ) : (
         <div className="space-y-3 sm:space-y-4">
-          {expenses.map((expense) => (
+          {visibleExpenses.map((expense) => (
             <Card key={expense.id} className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-r from-card to-card/80 backdrop-blur">
               <CardContent className="p-4 sm:p-6">
                 {/* Header */}
