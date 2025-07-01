@@ -133,25 +133,25 @@ export const NotionSidebar = ({
           </Button>
         )}
         <div className="flex-1 flex justify-center">
-          {(isMobile || !isCollapsed) && (
-            <div className="flex items-center space-x-3">
-              <div className={`rounded-lg bg-primary flex items-center justify-center ${
-                isMobile ? 'h-12 w-12' : 'h-8 w-8'
-              }`}>
-                <span className={`text-primary-foreground font-bold ${
-                  isMobile ? 'text-lg' : 'text-sm'
-                }`}>ET</span>
-              </div>
-              <div>
-                <h1 className={`font-semibold ${
-                  isMobile ? 'text-lg' : 'text-sm'
-                }`}>Expense Tracker</h1>
-                <p className={`text-muted-foreground ${
-                  isMobile ? 'text-sm' : 'text-xs'
-                }`}>Manage expenses</p>
-              </div>
+        {(isMobile || !isCollapsed) && (
+          <div className="flex items-center space-x-3">
+            <div className={`rounded-lg bg-primary flex items-center justify-center ${
+              isMobile ? 'h-12 w-12' : 'h-8 w-8'
+            }`}>
+              <span className={`text-primary-foreground font-bold ${
+                isMobile ? 'text-lg' : 'text-sm'
+              }`}>ET</span>
             </div>
-          )}
+            <div>
+              <h1 className={`font-semibold ${
+                isMobile ? 'text-lg' : 'text-sm'
+              }`}>Expense Tracker</h1>
+              <p className={`text-muted-foreground ${
+                isMobile ? 'text-sm' : 'text-xs'
+              }`}>Manage expenses</p>
+            </div>
+          </div>
+        )}
         </div>
         {!isMobile && (
           <Button
