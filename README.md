@@ -1,4 +1,4 @@
-# SplitIt - Smart Expense Tracking
+# iSplit - Smart Expense Tracking
 
 A modern expense tracking and splitting application built for roommates, friends, and groups to manage shared expenses efficiently.
 

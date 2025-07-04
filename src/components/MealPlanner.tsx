@@ -207,9 +207,9 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger, onMo
   };
 
   return (
-    <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2 sm:mb-6">
+    <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl max-w-full mx-auto h-[100dvh] max-h-[100dvh] flex flex-col">
+      <CardHeader className="pb-2 sm:pb-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
             <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Meal Planner
@@ -263,7 +263,7 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger, onMo
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-4">
         {loading ? (
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
@@ -335,8 +335,8 @@ export const MealPlanner = ({ currentHomeId, selectedMonth, refreshTrigger, onMo
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1 sm:gap-2">
               {/* Day headers */}
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-1 sm:p-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
+                <div key={day + idx} className="text-center text-xs font-medium text-muted-foreground p-1 sm:p-2">
                   {day}
                 </div>
               ))}

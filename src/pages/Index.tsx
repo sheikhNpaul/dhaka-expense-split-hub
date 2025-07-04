@@ -3,6 +3,7 @@ import { Auth } from '@/components/Auth';
 import { Dashboard } from '@/components/Dashboard';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { ExpenseForm } from '../components/ExpenseForm';
 
 const Index = () => {
   const { user, loading } = useAuth();

@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AddExpense } from './AddExpense';
 import { ExpenseList } from './ExpenseList';
-import { EditExpense } from './EditExpense';
 import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
@@ -13,9 +11,10 @@ import { MealPlanner } from './MealPlanner';
 import { NotionSidebar } from './NotionSidebar';
 import { startOfMonth, endOfMonth, format, addMonths, subMonths } from 'date-fns';
 import { PaymentRequests } from '@/components/PaymentRequests';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExpenseForm } from './ExpenseForm';
 
 interface Expense {
   id: string;
@@ -31,17 +30,17 @@ export const Dashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [profile, setProfile] = useState<any>(null);
+  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [selectedMonth, setSelectedMonth] = useState<Date>(startOfMonth(new Date()));
   const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Get current tab from URL search params or default to 'expenses'
-  const searchParams = new URLSearchParams(location.search);
   const currentTab = searchParams.get('tab') || 'expenses';
 
   useEffect(() => {
@@ -53,7 +52,11 @@ export const Dashboard = () => {
   // Check if mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarCollapsed(true);
+      }
     };
 
     checkMobile();
@@ -86,8 +89,14 @@ export const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleOpenAddExpense = () => {
+    setShowAddExpense(true);
+    setEditingExpense(null);
+  };
+
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense);
+    setShowAddExpense(false);
   };
 
   const handleViewComments = (expenseId: string) => {
@@ -109,6 +118,10 @@ export const Dashboard = () => {
       return startOfMonth(newDate);
     });
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
   };
 
   const renderContent = () => {
@@ -143,7 +156,7 @@ export const Dashboard = () => {
               </div>
               {currentHomeId && (
                 <Button 
-                  onClick={() => setShowAddExpense(true)} 
+                  onClick={handleOpenAddExpense} 
                   className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm px-6"
                 >
                   Add Expense
@@ -262,20 +275,23 @@ export const Dashboard = () => {
         onProfileUpdate={handleProfileUpdate}
         onAddExpense={() => setShowAddExpense(true)}
         currentHomeId={currentHomeId}
+        onSidebarToggle={handleSidebarToggle}
       />
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col ${isMobile ? 'ml-0' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        isMobile ? 'ml-0' : isSidebarCollapsed ? 'ml-16' : 'ml-64'
+      }`}>
         {/* Top Bar */}
         <div className={`border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
           isMobile ? 'h-20' : 'h-16'
         }`}>
           <div className={`flex h-full items-center ${
-            isMobile ? 'px-6 ml-20' : 'px-6'
-          }`}>
+            isMobile ? 'px-6' : 'px-6'
+          } justify-start`}>
             <div className="flex items-center space-x-4">
               <h2 className={`font-semibold capitalize ${
-                isMobile ? 'text-lg' : 'text-lg'
+                isMobile ? 'text-lg text-left' : 'text-lg'
               }`}>
                 {currentTab === 'homes' && 'Homes'}
                 {currentTab === 'expenses' && 'Expenses'}
@@ -298,20 +314,49 @@ export const Dashboard = () => {
       </div>
 
       {/* Modals */}
-      {showAddExpense && (
-        <AddExpense
-          currentHomeId={currentHomeId}
-          onClose={() => setShowAddExpense(false)}
-          onExpenseAdded={handleExpenseAdded}
-        />
-      )}
-
-      {editingExpense && (
-        <EditExpense
-          expense={editingExpense}
-          onClose={() => setEditingExpense(null)}
-          onExpenseUpdated={handleExpenseUpdated}
-        />
+      {(showAddExpense || editingExpense) && (
+        <div
+          className={`fixed top-0 right-0 z-50 h-full bg-background shadow-lg transition-all duration-300 flex flex-col
+            ${isMobile ? 'w-full max-w-full' : 'w-[420px] max-w-full'}
+          `}
+          style={{ boxShadow: '0 0 24px 0 rgba(0,0,0,0.12)' }}
+        >
+          <div className="flex items-center justify-between p-4 border-b">
+            <button
+              onClick={() => {
+                setShowAddExpense(false);
+                setEditingExpense(null);
+              }}
+              className="text-muted-foreground hover:text-primary focus:outline-none"
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <span className="font-semibold text-lg">
+              {showAddExpense ? 'Add Expense' : 'Edit Expense'}
+            </span>
+            <div style={{ width: 24 }} /> {/* Spacer for symmetry */}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {showAddExpense && (
+              <ExpenseForm
+                mode="add"
+                currentHomeId={currentHomeId}
+                onClose={() => setShowAddExpense(false)}
+                onSuccess={handleExpenseAdded}
+              />
+            )}
+            {editingExpense && (
+              <ExpenseForm
+                mode="edit"
+                currentHomeId={currentHomeId}
+                initialValues={editingExpense}
+                onClose={() => setEditingExpense(null)}
+                onSuccess={handleExpenseUpdated}
+              />
+            )}
+          </div>
+        </div>
       )}
 
       {viewingComments && (

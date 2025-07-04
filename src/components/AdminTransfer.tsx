@@ -13,7 +13,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Shield } from 'lucide-react';
+import { Shield, Crown, User, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface AdminTransferProps {
   homeId: string;
@@ -30,13 +38,13 @@ interface AdminTransferProps {
 export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTransferProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   const handleTransfer = async () => {
     if (!user) return;
     
-    setIsLoading(true);
+    setIsTransferring(true);
     try {
       // Remove admin rights from current user
       const { error: removeError } = await supabase
@@ -70,44 +78,78 @@ export const AdminTransfer = ({ homeId, member, onTransferComplete }: AdminTrans
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
-      setIsOpen(false);
+      setIsTransferring(false);
+      setShowDialog(false);
     }
   };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 h-10 sm:h-9"
-      >
-        <Shield className="h-4 w-4" />
-        <span>Make Admin</span>
-      </Button>
-
-      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-        <AlertDialogContent className="sm:max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg sm:text-xl">Transfer Admin Rights</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
-              Are you sure you want to transfer your admin rights to {member.profile.name}? 
-              You will no longer be an admin after this action.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
-            <AlertDialogCancel disabled={isLoading} className="h-10 sm:h-9">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleTransfer}
-              disabled={isLoading}
-              className="bg-primary h-10 sm:h-9"
+    <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-10 w-10 sm:h-8 sm:w-8 p-0 border-2 hover:bg-muted/50 transition-all duration-200 touch-manipulation"
+        >
+          <Crown className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="space-y-3 sm:space-y-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+              <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <DialogTitle className="text-base sm:text-lg font-bold">Make Admin</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">
+                Transfer admin privileges to {member.profile.name}
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+        
+        <div className="space-y-4 sm:space-y-6">
+          <div className="p-3 sm:p-4 bg-primary/5 dark:bg-primary/10 rounded-lg border border-primary/20 dark:border-primary/30">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-primary mb-1 text-sm sm:text-base">Admin Transfer</h4>
+                <p className="text-xs sm:text-sm text-primary/80 dark:text-primary/70">
+                  This will transfer all admin privileges to {member.profile.name}. You will lose admin access to this home.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowDialog(false)}
+              className="h-12 sm:h-9 border-2 hover:bg-muted/50 transition-all duration-200 touch-manipulation"
             >
-              {isLoading ? "Transferring..." : "Transfer Admin Rights"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTransfer}
+              disabled={isTransferring}
+              className="h-12 sm:h-9 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg touch-manipulation"
+            >
+              {isTransferring ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Transferring...
+                </>
+              ) : (
+                <>
+                  <Crown className="h-4 w-4 mr-2" />
+                  Make Admin
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }; 
