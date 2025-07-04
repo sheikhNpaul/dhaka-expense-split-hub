@@ -17,7 +17,8 @@ import {
   X,
   Settings,
   Users,
-  BarChart3
+  BarChart3,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -98,6 +99,12 @@ export const NotionSidebar = ({
       id: 'payments',
       label: 'Payments',
       icon: BarChart3,
+      disabled: !currentHomeId,
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      icon: MessageCircle,
       disabled: !currentHomeId,
     },
   ];
