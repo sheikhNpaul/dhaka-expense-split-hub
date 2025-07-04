@@ -90,25 +90,31 @@ export type Database = {
       }
       home_members: {
         Row: {
-          home_id: string
           id: string
-          is_active: boolean
-          joined_at: string
+          home_id: string
           user_id: string
+          is_active: boolean
+          is_admin: boolean
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          home_id: string
           id?: string
-          is_active?: boolean
-          joined_at?: string
+          home_id: string
           user_id: string
+          is_active?: boolean
+          is_admin?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          home_id?: string
           id?: string
-          is_active?: boolean
-          joined_at?: string
+          home_id?: string
           user_id?: string
+          is_active?: boolean
+          is_admin?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -118,6 +124,13 @@ export type Database = {
             referencedRelation: "homes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "home_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       homes: {
@@ -149,6 +162,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      meal_orders: {
+        Row: {
+          id: string
+          user_id: string
+          home_id: string
+          date: string
+          meal_count: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          home_id: string
+          date: string
+          meal_count: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          home_id?: string
+          date?: string
+          meal_count?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_orders_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       profiles: {
         Row: {
@@ -188,6 +246,61 @@ export type Database = {
           },
         ]
       }
+      payment_requests: {
+        Row: {
+          id: string
+          amount: number
+          from_user_id: string
+          to_user_id: string
+          home_id: string
+          status: 'pending' | 'approved' | 'rejected'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          amount: number
+          from_user_id: string
+          to_user_id: string
+          home_id: string
+          status?: 'pending' | 'approved' | 'rejected'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          amount?: number
+          from_user_id?: string
+          to_user_id?: string
+          home_id?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_requests_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_requests_home_id_fkey"
+            columns: ["home_id"]
+            isOneToOne: false
+            referencedRelation: "homes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -210,6 +323,14 @@ export type Database = {
       insert_expense_comment: {
         Args: { p_content: string; p_user_id: string; p_expense_id: string }
         Returns: string
+      }
+      transfer_admin_rights: {
+        Args: {
+          home_id_param: string;
+          from_user_id: string;
+          to_user_id: string;
+        };
+        Returns: boolean;
       }
     }
     Enums: {

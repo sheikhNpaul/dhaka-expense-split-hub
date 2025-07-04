@@ -1,10 +1,32 @@
-
 import { useAuth } from '@/hooks/useAuth';
 import { Auth } from '@/components/Auth';
 import { Dashboard } from '@/components/Dashboard';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ExpenseForm } from '../components/ExpenseForm';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [authMode, setAuthMode] = useState<'signup' | 'signin' | null>(null);
+
+  useEffect(() => {
+    // Check URL parameters for auth mode
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode');
+    
+    if (mode === 'signup' || mode === 'signin') {
+      setAuthMode(mode);
+    }
+
+    // If no tab is set in URL and user is logged in, default to expenses tab
+    if (user && !location.search.includes('tab=')) {
+      const params = new URLSearchParams(location.search);
+      params.set('tab', 'expenses');
+      navigate(`/app?${params.toString()}`, { replace: true });
+    }
+  }, [user, location.search, navigate]);
 
   if (loading) {
     return (
@@ -17,7 +39,7 @@ const Index = () => {
     );
   }
 
-  return user ? <Dashboard /> : <Auth />;
+  return user ? <Dashboard /> : <Auth initialMode={authMode} />;
 };
 
 export default Index;

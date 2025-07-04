@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { config } from '@/lib/config';
 
 export const ForgotPassword = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,8 +18,15 @@ export const ForgotPassword = () => {
     setLoading(true);
 
     try {
+      // Get the current origin for the redirect URL
+      const currentOrigin = window.location.origin;
+      const redirectUrl = `${currentOrigin}/reset-password`;
+      console.log('Password reset redirect URL:', redirectUrl);
+      console.log('Current origin:', currentOrigin);
+      console.log('Current location:', window.location.href);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: redirectUrl,
       });
 
       if (error) throw error;
@@ -32,9 +39,10 @@ export const ForgotPassword = () => {
       setIsOpen(false);
       setEmail('');
     } catch (error: any) {
+      console.error('Password reset error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to send password reset email. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -47,18 +55,18 @@ export const ForgotPassword = () => {
       <DialogTrigger asChild>
         <button
           type="button"
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-600 hover:underline py-2"
         >
           Forgot your password?
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Reset Password</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleForgotPassword} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="reset-email">Email</Label>
+            <Label htmlFor="reset-email" className="text-sm font-medium">Email</Label>
             <Input
               id="reset-email"
               type="email"
@@ -66,9 +74,10 @@ export const ForgotPassword = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
               required
+              className="h-11 sm:h-10"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full h-11 sm:h-10" disabled={loading}>
             {loading ? 'Sending...' : 'Send Reset Link'}
           </Button>
         </form>

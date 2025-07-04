@@ -1,18 +1,20 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AddExpense } from './AddExpense';
 import { ExpenseList } from './ExpenseList';
-import { EditExpense } from './EditExpense';
 import { ExpenseComments } from './ExpenseComments';
 import { BalanceDashboard } from './BalanceDashboard';
 import { UserProfile } from './UserProfile';
 import { HomeManager } from './HomeManager';
-import { LogOut, Plus, Receipt, TrendingUp, Home } from 'lucide-react';
+import { MealPlanner } from './MealPlanner';
+import { NotionSidebar } from './NotionSidebar';
+import { startOfMonth, endOfMonth, format, addMonths, subMonths } from 'date-fns';
+import { PaymentRequests } from '@/components/PaymentRequests';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ExpenseForm } from './ExpenseForm';
 
 interface Expense {
   id: string;
@@ -25,19 +27,42 @@ interface Expense {
 }
 
 export const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [profile, setProfile] = useState<any>(null);
+  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [viewingComments, setViewingComments] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const currentTab = searchParams.get('tab') || 'expenses';
 
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
   }, [user]);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (mobile) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -64,8 +89,14 @@ export const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const handleOpenAddExpense = () => {
+    setShowAddExpense(true);
+    setEditingExpense(null);
+  };
+
   const handleEditExpense = (expense: Expense) => {
     setEditingExpense(expense);
+    setShowAddExpense(false);
   };
 
   const handleViewComments = (expenseId: string) => {
@@ -81,151 +112,251 @@ export const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Modern Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 md:h-20">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent truncate">
-                Expense Tracker
-              </h1>
-              <p className="text-sm text-muted-foreground truncate">
-                Welcome back, {profile?.name || user?.email}!
-              </p>
+  const handleMonthChange = (direction: 'prev' | 'next') => {
+    setSelectedMonth(prev => {
+      const newDate = direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1);
+      return startOfMonth(newDate);
+    });
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
+  };
+
+  const renderContent = () => {
+    switch (currentTab) {
+      case 'homes':
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="hidden sm:block">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Homes</h1>
+                <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                  Manage your shared living spaces and members
+                </p>
+              </div>
             </div>
-            
-            <div className="flex items-center space-x-2 md:space-x-4">
+            <HomeManager 
+              onHomeSelected={handleHomeSelected}
+              currentHomeId={currentHomeId}
+            />
+          </div>
+        );
+
+      case 'expenses':
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="hidden sm:block">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Expenses</h1>
+                <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                  Track and manage shared expenses
+                </p>
+              </div>
               {currentHomeId && (
-                <Button
-                  onClick={() => setShowAddExpense(true)}
-                  size="sm"
-                  className="bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                <Button 
+                  onClick={handleOpenAddExpense} 
+                  className="w-full sm:w-auto h-12 sm:h-10 text-base sm:text-sm px-6"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add Expense</span>
+                  Add Expense
                 </Button>
               )}
-              
-              <UserProfile profile={profile} onProfileUpdate={handleProfileUpdate} />
-              
-              <Button
-                variant="outline"
-                onClick={signOut}
-                size="sm"
-                className="hover:bg-destructive hover:text-destructive-foreground transition-all flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline">Sign Out</span>
-              </Button>
+            </div>
+            
+            {currentHomeId && (
+              <div className="flex items-center justify-center sm:justify-start space-x-4 mb-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleMonthChange('prev')}
+                  className="h-12 w-12 p-0 rounded-xl"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <div className="flex items-center space-x-3 min-w-0 bg-muted/50 rounded-xl px-4 py-2">
+                  <Calendar className="h-5 w-5 flex-shrink-0" />
+                  <span className="font-semibold text-base sm:text-lg truncate">
+                    {format(selectedMonth, 'MMMM yyyy')}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleMonthChange('next')}
+                  className="h-12 w-12 p-0 rounded-xl"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            )}
+            
+            <ExpenseList
+              currentHomeId={currentHomeId}
+              selectedMonth={selectedMonth}
+              onEditExpense={handleEditExpense}
+              onViewComments={handleViewComments}
+              refreshTrigger={refreshTrigger}
+              onMonthChange={setSelectedMonth}
+            />
+          </div>
+        );
+
+      case 'meals':
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <div className="hidden sm:block">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Meal Planner</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                Plan and track shared meals
+              </p>
+            </div>
+            <MealPlanner 
+              currentHomeId={currentHomeId} 
+              selectedMonth={selectedMonth} 
+              onMonthChange={setSelectedMonth}
+            />
+          </div>
+        );
+
+      case 'balances':
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <div className="hidden sm:block">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Balances</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                View expense balances and settlements
+              </p>
+            </div>
+            <BalanceDashboard 
+              currentHomeId={currentHomeId}
+              selectedMonth={selectedMonth}
+              refreshTrigger={refreshTrigger}
+            />
+          </div>
+        );
+
+      case 'payments':
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <div className="hidden sm:block">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Payments</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                Manage payment requests and settlements
+              </p>
+            </div>
+            <PaymentRequests 
+              currentHomeId={currentHomeId}
+              selectedMonth={selectedMonth}
+              onPaymentStatusChange={() => setRefreshTrigger(prev => prev + 1)}
+            />
+          </div>
+        );
+
+      default:
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <div className="hidden sm:block">
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-muted-foreground text-base sm:text-lg mt-2">
+                Welcome to your expense tracker
+              </p>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <NotionSidebar
+        profile={profile}
+        onProfileUpdate={handleProfileUpdate}
+        onAddExpense={() => setShowAddExpense(true)}
+        currentHomeId={currentHomeId}
+        onSidebarToggle={handleSidebarToggle}
+      />
+
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+        isMobile ? 'ml-0' : isSidebarCollapsed ? 'ml-16' : 'ml-64'
+      }`}>
+        {/* Top Bar */}
+        <div className={`border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 ${
+          isMobile ? 'h-20' : 'h-16'
+        }`}>
+          <div className={`flex h-full items-center ${
+            isMobile ? 'px-6' : 'px-6'
+          } justify-start`}>
+            <div className="flex items-center space-x-4">
+              <h2 className={`font-semibold capitalize ${
+                isMobile ? 'text-lg text-left' : 'text-lg'
+              }`}>
+                {currentTab === 'homes' && 'Homes'}
+                {currentTab === 'expenses' && 'Expenses'}
+                {currentTab === 'meals' && 'Meal Planner'}
+                {currentTab === 'balances' && 'Balances'}
+                {currentTab === 'payments' && 'Payments'}
+              </h2>
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
-        <Tabs defaultValue="homes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/50 backdrop-blur-sm p-1 rounded-xl">
-            <TabsTrigger 
-              value="homes" 
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg"
-            >
-              <Home className="h-4 w-4" />
-              <span className="hidden sm:inline">Homes</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="expenses" 
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
-              disabled={!currentHomeId}
-            >
-              <Receipt className="h-4 w-4" />
-              <span className="hidden sm:inline">Expenses</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="balances"
-              className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all rounded-lg disabled:opacity-50"
-              disabled={!currentHomeId}
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Balances</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="homes" className="space-y-6">
-            <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                  <Home className="h-5 w-5 text-primary" />
-                  Home Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <HomeManager 
-                  onHomeSelected={handleHomeSelected}
-                  currentHomeId={currentHomeId || undefined}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="expenses" className="space-y-6">
-            {currentHomeId ? (
-              <Card className="border-0 bg-gradient-to-br from-card to-card/80 backdrop-blur shadow-xl">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
-                    <Receipt className="h-5 w-5 text-primary" />
-                    Recent Expenses
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ExpenseList 
-                    refreshTrigger={refreshTrigger}
-                    onEditExpense={handleEditExpense}
-                    onViewComments={handleViewComments}
-                    currentHomeId={currentHomeId}
-                  />
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground">Please select a home first to view expenses</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="balances" className="space-y-6">
-            {currentHomeId ? (
-              <BalanceDashboard currentHomeId={currentHomeId} />
-            ) : (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground">Please select a home first to view balances</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
-      </main>
+        {/* Page Content */}
+        <div className="flex-1 overflow-auto">
+          <div className={`container mx-auto max-w-7xl ${
+            isMobile ? 'p-4' : 'p-6'
+          }`}>
+            {renderContent()}
+          </div>
+        </div>
+      </div>
 
       {/* Modals */}
-      {showAddExpense && currentHomeId && (
-        <AddExpense
-          onClose={() => setShowAddExpense(false)}
-          onExpenseAdded={handleExpenseAdded}
-          currentHomeId={currentHomeId}
-        />
-      )}
-
-      {editingExpense && (
-        <EditExpense
-          expense={editingExpense}
-          onClose={() => setEditingExpense(null)}
-          onExpenseUpdated={handleExpenseUpdated}
-        />
+      {(showAddExpense || editingExpense) && (
+        <div
+          className={`fixed top-0 right-0 z-50 h-full bg-background shadow-lg transition-all duration-300 flex flex-col
+            ${isMobile ? 'w-full max-w-full' : 'w-[420px] max-w-full'}
+          `}
+          style={{ boxShadow: '0 0 24px 0 rgba(0,0,0,0.12)' }}
+        >
+          <div className="flex items-center justify-between p-4 border-b">
+            <button
+              onClick={() => {
+                setShowAddExpense(false);
+                setEditingExpense(null);
+              }}
+              className="text-muted-foreground hover:text-primary focus:outline-none"
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <span className="font-semibold text-lg">
+              {showAddExpense ? 'Add Expense' : 'Edit Expense'}
+            </span>
+            <div style={{ width: 24 }} /> {/* Spacer for symmetry */}
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {showAddExpense && (
+              <ExpenseForm
+                mode="add"
+                currentHomeId={currentHomeId}
+                onClose={() => setShowAddExpense(false)}
+                onSuccess={handleExpenseAdded}
+              />
+            )}
+            {editingExpense && (
+              <ExpenseForm
+                mode="edit"
+                currentHomeId={currentHomeId}
+                initialValues={editingExpense}
+                onClose={() => setEditingExpense(null)}
+                onSuccess={handleExpenseUpdated}
+              />
+            )}
+          </div>
+        </div>
       )}
 
       {viewingComments && (

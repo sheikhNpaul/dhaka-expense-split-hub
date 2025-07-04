@@ -1,0 +1,11 @@
+# Handle client-side routing for SPA
+/*    /index.html   200
+
+# Handle specific routes
+/app    /index.html   200
+/reset-password    /index.html   200
+/auth/*    /index.html   200
+/auth/callback    /index.html   200
+
+# Force HTTPS (optional)
+http://isplit.netlify.app/* https://isplit.netlify.app/:splat 301! 
