@@ -245,6 +245,10 @@
     ::-webkit-scrollbar-thumb:hover {
       background: hsl(var(--muted-foreground) / 0.5);
     }
+
+    .hide-sheet-close-mobile [data-radix-dialog-close] {
+      display: none !important;
+    }
   }
 
   /* Desktop enhancements */

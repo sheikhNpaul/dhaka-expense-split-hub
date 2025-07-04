@@ -392,13 +392,47 @@ export const HomeManager = ({ onHomeSelected, currentHomeId }: HomeManagerProps)
   };
 
   const copyHomeCode = async (code: string) => {
-    await navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 2000);
-    toast({
-      title: "Copied!",
-      description: "Home code copied to clipboard",
-    });
+    // Try modern clipboard API first
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+      toast({
+        title: "Copied!",
+        description: "Home code copied to clipboard",
+      });
+      return;
+    } catch (err) {
+      // Fallback to execCommand method
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = code;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (successful) {
+          setCopiedCode(code);
+          setTimeout(() => setCopiedCode(null), 2000);
+          toast({
+            title: "Copied!",
+            description: "Home code copied to clipboard",
+          });
+          return;
+        }
+      } catch (err2) {
+        // ignore
+      }
+      // If all fails, show error toast
+      toast({
+        title: "Copy Failed",
+        description: "Could not copy to clipboard. Please copy manually.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditHome = (home: Home) => {
