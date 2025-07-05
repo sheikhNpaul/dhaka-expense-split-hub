@@ -15,6 +15,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ExpenseForm } from './ExpenseForm';
+import { Messages } from './Messages';
 
 interface Expense {
   id: string;
@@ -253,6 +254,13 @@ export const Dashboard = () => {
           </div>
         );
 
+      case 'messages':
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <Messages currentHomeId={currentHomeId || ''} />
+          </div>
+        );
+
       default:
         return (
           <div className="space-y-6 sm:space-y-8">
@@ -298,6 +306,7 @@ export const Dashboard = () => {
                 {currentTab === 'meals' && 'Meal Planner'}
                 {currentTab === 'balances' && 'Balances'}
                 {currentTab === 'payments' && 'Payments'}
+                {currentTab === 'messages' && 'Messages'}
               </h2>
             </div>
           </div>
