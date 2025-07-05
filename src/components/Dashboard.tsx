@@ -255,11 +255,7 @@ export const Dashboard = () => {
         );
 
       case 'messages':
-        return (
-          <div className="space-y-6 sm:space-y-8">
-            <Messages currentHomeId={currentHomeId || ''} />
-          </div>
-        );
+        return <Messages currentHomeId={currentHomeId || ''} />;
 
       default:
         return (
@@ -314,11 +310,17 @@ export const Dashboard = () => {
 
         {/* Page Content */}
         <div className="flex-1 overflow-auto">
-          <div className={`container mx-auto max-w-7xl ${
-            isMobile ? 'p-4' : 'p-6'
-          }`}>
-            {renderContent()}
-          </div>
+          {currentTab === 'messages' ? (
+            <div className="h-full">
+              {renderContent()}
+            </div>
+          ) : (
+            <div className={`container mx-auto max-w-7xl ${
+              isMobile ? 'p-4' : 'p-6'
+            }`}>
+              {renderContent()}
+            </div>
+          )}
         </div>
       </div>
 
