@@ -182,7 +182,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
     if (!user || !newCategory.name || !newCategory.icon) {
       toast({ 
         title: 'Error', 
-        description: 'Please provide both name and select an icon', 
+        description: 'Please select an icon for your category', 
         variant: 'destructive' 
       });
       return;
@@ -516,8 +516,14 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                 id="cat-name"
                 value={newCategory.name}
                 onChange={e => setNewCategory(c => ({ ...c, name: e.target.value }))}
+                placeholder="Will be auto-filled when you select an icon"
                 required
+                disabled
+                className="bg-muted/50"
               />
+              <p className="text-xs text-muted-foreground">
+                💡 Just select an icon below - the name will be filled automatically!
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Icon</Label>
@@ -531,7 +537,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                       className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-lg border transition-all duration-200
                         ${newCategory.icon === opt.value ? 'border-primary bg-primary/10 text-primary' : 'border-muted bg-muted/40 text-muted-foreground hover:text-primary hover:border-primary'}
                       `}
-                      onClick={() => setNewCategory(c => ({ ...c, icon: opt.value }))}
+                      onClick={() => setNewCategory(c => ({ ...c, icon: opt.value, name: opt.name }))}
                     >
                       {newCategory.icon === opt.value && (
                         <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
@@ -570,8 +576,12 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                 id="edit-cat-name"
                 value={editingCategory?.name || ''}
                 onChange={e => setEditingCategory(c => c ? { ...c, name: e.target.value } : null)}
+                placeholder="Will be auto-filled when you select an icon"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                💡 Select a new icon to auto-fill the name, or edit manually
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Icon</Label>
@@ -585,7 +595,7 @@ export const AddExpense = ({ onClose, onExpenseAdded, currentHomeId, defaultDate
                       className={`relative flex flex-col items-center justify-center w-14 h-14 rounded-lg border transition-all duration-200
                         ${editingCategory?.icon === opt.value ? 'border-primary bg-primary/10 text-primary' : 'border-muted bg-muted/40 text-muted-foreground hover:text-primary hover:border-primary'}
                       `}
-                      onClick={() => setEditingCategory(c => c ? { ...c, icon: opt.value } : null)}
+                      onClick={() => setEditingCategory(c => c ? { ...c, icon: opt.value, name: opt.name } : null)}
                     >
                       {editingCategory?.icon === opt.value && (
                         <div className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full p-0.5">
