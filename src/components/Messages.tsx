@@ -32,6 +32,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
   const [uploading, setUploading] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -41,7 +42,11 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
     const channel = supabase
       .channel('messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        setMessages(prev => [...prev, payload.new as Message]);
+        const newMessage = payload.new as Message;
+        setMessages(prev => [...prev, newMessage]);
+        if (newMessage.user_id !== user?.id) {
+          setUnreadCount(prev => prev + 1);
+        }
         scrollToBottom();
       })
       .subscribe();
@@ -71,6 +76,9 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
     setShowScrollButton(!isAtBottom);
+    if (isAtBottom) {
+      setUnreadCount(0);
+    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -112,8 +120,13 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
   return (
     <Card className="w-full max-w-2xl mx-auto h-[80vh] flex flex-col relative bg-gradient-to-br from-background to-muted/20 border-0 shadow-xl">
       <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20">
-        <CardTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+        <CardTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent flex items-center justify-between">
           Messages
+          {unreadCount > 0 && (
+            <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+              {unreadCount} new
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto space-y-4 pb-2 relative bg-gradient-to-b from-transparent to-muted/10" ref={messagesContainerRef} onScroll={handleScroll}>
