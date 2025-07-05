@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Paperclip, Send, ChevronDown, Check, CheckCheck } from 'lucide-react';
+import { Paperclip, Send, ChevronDown, Check, CheckCheck, ArrowLeft } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -118,18 +118,35 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto h-[80vh] flex flex-col relative bg-gradient-to-br from-background to-muted/20 border-0 shadow-xl">
-      <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20">
-        <CardTitle className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent flex items-center justify-between">
-          Messages
+    <div className="w-full h-full flex flex-col bg-background">
+      {/* Mobile Header */}
+      <div className="flex-shrink-0 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                Messages
+              </h1>
+              <p className="text-xs text-muted-foreground">Home Chat</p>
+            </div>
+          </div>
           {unreadCount > 0 && (
             <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
               {unreadCount} new
             </span>
           )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-4 pb-2 relative bg-gradient-to-b from-transparent to-muted/10" ref={messagesContainerRef} onScroll={handleScroll}>
+        </div>
+      </div>
+
+      {/* Messages Container */}
+      <div 
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-gradient-to-b from-background to-muted/5" 
+        ref={messagesContainerRef} 
+        onScroll={handleScroll}
+      >
         {messages.map((msg, index) => {
           const isMe = msg.user_id === user?.id;
           const isImage = msg.file_url && (msg.file_url.endsWith('.jpg') || msg.file_url.endsWith('.jpeg') || msg.file_url.endsWith('.png') || msg.file_url.endsWith('.gif'));
@@ -141,9 +158,9 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
               className={`w-full flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-in slide-in-from-bottom-2 duration-500 ease-out`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className={`flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-3 w-full group`}>
+              <div className={`flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 md:gap-3 w-full group max-w-full`}>
                 {/* Bubble */}
-                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[70%] transition-all duration-300 hover:scale-[1.02]`}>
+                <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] md:max-w-[70%] transition-all duration-300 hover:scale-[1.02]`}>
                   {/* Name above bubble for others */}
                   {!isMe && (
                     <div className="flex items-center gap-2 mb-2 animate-in fade-in-50 slide-in-from-left-2 duration-300">
@@ -159,23 +176,23 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                     </div>
                   )}
                   <div 
-                    className={`rounded-2xl px-3 py-2 sm:px-4 ${isMe 
+                    className={`rounded-2xl px-4 py-3 md:px-4 ${isMe 
                       ? 'bg-gradient-to-br from-[#1D9BF0] to-[#1A8CD8] text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40' 
                       : 'bg-gradient-to-br from-[#F7F9F9] to-[#F0F2F5] text-[#0F1419] shadow-lg shadow-gray-200/50 hover:shadow-gray-300/60'
-                    } max-w-[260px] sm:max-w-[300px] flex flex-col transition-all duration-300 hover:scale-[1.01] relative overflow-hidden`} 
+                    } max-w-[280px] md:max-w-[300px] flex flex-col transition-all duration-300 hover:scale-[1.01] relative overflow-hidden`} 
                     style={{ wordBreak: 'break-word' }}
                   >
                     {msg.content && (
-                      <div className="text-sm sm:text-base leading-relaxed whitespace-pre-line break-words mb-1.5 font-medium">
+                      <div className="text-base md:text-base leading-relaxed whitespace-pre-line break-words mb-2 font-medium">
                         {msg.content}
                       </div>
                     )}
                     {msg.file_url && isImage && (
-                      <div className="relative group/image">
+                      <div className="relative group/image mb-2">
                         <img 
                           src={msg.file_url} 
                           alt="attachment" 
-                          className="rounded-xl max-w-[140px] sm:max-w-[160px] max-h-[140px] sm:max-h-[160px] object-cover transition-all duration-300 hover:scale-105 shadow-md" 
+                          className="rounded-xl max-w-[200px] md:max-w-[160px] max-h-[200px] md:max-h-[160px] object-cover transition-all duration-300 hover:scale-105 shadow-md" 
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/10 transition-all duration-300 rounded-xl"></div>
                       </div>
@@ -185,7 +202,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                         href={msg.file_url} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="block text-xs text-blue-600 underline hover:text-blue-700 transition-colors duration-200 flex items-center gap-1"
+                        className="block text-xs text-blue-600 underline hover:text-blue-700 transition-colors duration-200 flex items-center gap-1 mb-2"
                       >
                         <Paperclip className="h-4 w-4" /> 
                         <span className="font-medium">File</span>
@@ -193,7 +210,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                     )}
                   </div>
                   {/* Time and status below bubble */}
-                  <div className={`flex items-center gap-2 mt-1.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`flex items-center gap-2 mt-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                     <span className="text-xs text-muted-foreground/70 font-medium">
                       {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -228,40 +245,57 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
         )}
         
         <div ref={messagesEndRef} />
-      </CardContent>
+      </div>
       
       {/* Scroll to bottom button */}
       {showScrollButton && (
         <Button
           onClick={scrollToBottom}
           size="icon"
-          className="absolute bottom-20 right-4 h-12 w-12 rounded-full shadow-xl bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 hover:scale-110 animate-in slide-in-from-bottom-4 duration-300"
+          className="fixed bottom-20 right-4 h-12 w-12 rounded-full shadow-xl bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-300 hover:scale-110 animate-in slide-in-from-bottom-4 duration-300 z-50"
         >
           <ChevronDown className="h-6 w-6" />
         </Button>
       )}
       
-      <form onSubmit={handleSend} className="flex gap-3 p-4 border-t border-primary/20 bg-gradient-to-r from-background to-muted/10">
-        <label className="flex items-center cursor-pointer group">
-          <input type="file" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
-          <Paperclip className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
-        </label>
-        <Input
-          value={newMessage}
-          onChange={e => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 text-sm bg-background/50 border-primary/20 focus:border-primary/40 transition-all duration-200 rounded-xl"
-          disabled={uploading}
-        />
-        <Button 
-          type="submit" 
-          disabled={uploading || (!newMessage && !file)} 
-          size="icon" 
-          className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 hover:scale-105 shadow-lg"
-        >
-          <Send className="h-5 w-5" />
-        </Button>
-      </form>
-    </Card>
+      {/* Mobile Input Bar */}
+      <div className="flex-shrink-0 bg-background border-t border-primary/20 px-4 py-3">
+        <form onSubmit={handleSend} className="flex gap-3 items-end">
+          <label className="flex items-center cursor-pointer group flex-shrink-0">
+            <input type="file" className="hidden" onChange={e => setFile(e.target.files?.[0] || null)} />
+            <Paperclip className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors duration-200" />
+          </label>
+          <Input
+            value={newMessage}
+            onChange={e => setNewMessage(e.target.value)}
+            placeholder="Type a message..."
+            className="flex-1 text-base bg-background/50 border-primary/20 focus:border-primary/40 transition-all duration-200 rounded-xl min-h-[44px]"
+            disabled={uploading}
+          />
+          <Button 
+            type="submit" 
+            disabled={uploading || (!newMessage && !file)} 
+            size="icon" 
+            className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 hover:scale-105 shadow-lg flex-shrink-0"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        </form>
+        {file && (
+          <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <Paperclip className="h-3 w-3" />
+            <span>{file.name}</span>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setFile(null)}
+              className="h-6 px-2 text-xs"
+            >
+              Remove
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }; 
