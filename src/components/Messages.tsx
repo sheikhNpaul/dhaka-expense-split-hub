@@ -368,7 +368,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
               onMouseEnter={() => setHoveredMessageId(msg.id)}
               onMouseLeave={() => setHoveredMessageId(null)}
             >
-              <div className={`flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 sm:gap-3 w-full group max-w-full`}>
+              <div className={`flex ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 sm:gap-3 w-full group`}>
                 {/* Message Content Container */}
                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] sm:max-w-[75%] transition-all duration-300`}>
                   {/* Name and Avatar for others */}
@@ -417,7 +417,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
 
                   {/* Message Bubble */}
                   <div 
-                    className={`relative group ${isMe ? 'ml-auto' : 'mr-auto'}`}
+                    className={`relative group ${isMe ? 'ml-auto' : 'mr-auto'} w-fit max-w-full`}
                     onTouchStart={() => handleTouchStart(msg.id)}
                     onTouchEnd={handleTouchEnd}
                     onTouchMove={handleTouchMove}
@@ -496,7 +496,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                     )}
 
                     {/* Message Content */}
-                    <div className={`relative rounded-2xl px-4 sm:px-5 py-3 sm:py-4 shadow-lg transition-all duration-300 ${
+                    <div className={`relative rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-lg transition-all duration-300 ${
                       isMe 
                         ? 'bg-gradient-to-br from-blue-500 via-purple-600 to-pink-600 text-white' 
                         : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100'
@@ -556,7 +556,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                       ) : (
                         <>
                           {msg.content && (
-                            <div className={`leading-relaxed whitespace-pre-line break-words font-medium ${
+                            <div className={`leading-relaxed whitespace-pre-wrap break-words font-medium ${
                               msg.content.match(/^[\p{Emoji}\s]+$/u) ? 'text-xl sm:text-2xl' : 'text-sm sm:text-base'
                             }`}>
                               {msg.content}
@@ -889,8 +889,8 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
           </Button>
         </form>
         {file && (
-          <div className="mt-3 flex items-center gap-2 sm:gap-3 text-sm text-slate-600 dark:text-slate-400 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 rounded-xl p-2 sm:p-3 border border-slate-200/50 dark:border-slate-600/50">
-            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-sm">
+          <div className="mt-3 flex items-center gap-2 sm:gap-3 text-sm text-slate-600 dark:text-slate-400 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 rounded-xl p-2 sm:p-3 border border-slate-200/50 dark:border-slate-600/50 max-w-full overflow-hidden">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-sm flex-shrink-0">
               {file.type.startsWith('image/') ? (
                 <svg className="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -911,11 +911,11 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                 <Paperclip className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-sm">
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-xs sm:text-sm">
                 {file.name}
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
+              <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
                 {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type}
               </div>
             </div>
@@ -923,7 +923,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
               variant="ghost" 
               size="sm" 
               onClick={() => setFile(null)}
-              className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors duration-200"
+              className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors duration-200 flex-shrink-0"
             >
               <X className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
