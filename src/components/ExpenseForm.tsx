@@ -95,6 +95,7 @@ export const ExpenseForm = ({ mode, initialValues, currentHomeId, onClose, onSuc
     selectedParticipants: initialValues?.selectedParticipants || initialValues?.participants || (user ? [user.id] : []),
     category_id: initialValues?.category_id || '',
     date: initialValues?.date || (initialValues?.created_at ? new Date(initialValues.created_at).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10)),
+    split_type: initialValues?.split_type || 'custom'
   });
 
   useEffect(() => {
@@ -169,11 +170,23 @@ export const ExpenseForm = ({ mode, initialValues, currentHomeId, onClose, onSuc
     e.preventDefault();
     setLoading(true);
     try {
-      if (!formData.title || !formData.amount || !formData.category_id || !formData.selectedParticipants.length) {
+      if (!formData.title || !formData.amount || !formData.category_id) {
         toast({ title: 'Missing fields', description: 'Please fill all required fields.', variant: 'destructive' });
         setLoading(false);
         return;
       }
+      
+      // If split_type is 'custom' (Split with All), ensure all members are selected
+      if (formData.split_type === 'custom') {
+        const allMemberIds = homeMembers.map(m => m.user_id);
+        if (!formData.selectedParticipants.every(id => allMemberIds.includes(id))) {
+          setFormData(prev => ({
+            ...prev,
+            selectedParticipants: allMemberIds
+          }));
+        }
+      }
+
       if (mode === 'add') {
         const { error } = await supabase.from('expenses').insert([
           {
@@ -182,7 +195,7 @@ export const ExpenseForm = ({ mode, initialValues, currentHomeId, onClose, onSuc
             description: formData.description,
             payer_id: user?.id,
             participants: formData.selectedParticipants,
-            split_type: 'manual',
+            split_type: formData.split_type,
             category_id: formData.category_id,
             home_id: currentHomeId,
             created_at: formData.date,
@@ -196,7 +209,7 @@ export const ExpenseForm = ({ mode, initialValues, currentHomeId, onClose, onSuc
           amount: parseFloat(formData.amount),
           description: formData.description,
           participants: formData.selectedParticipants,
-          split_type: 'manual',
+          split_type: formData.split_type,
           category_id: formData.category_id,
           created_at: formData.date,
         }).eq('id', initialValues.id);
@@ -299,6 +312,23 @@ export const ExpenseForm = ({ mode, initialValues, currentHomeId, onClose, onSuc
           placeholder="Additional details..."
           className="min-h-[80px] sm:min-h-[60px]"
         />
+      </div>
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Split Type</Label>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="split-all"
+            checked={formData.split_type === 'custom'}
+            onCheckedChange={(checked) => {
+              setFormData(prev => ({
+                ...prev,
+                split_type: checked ? 'custom' : 'one_person',
+                selectedParticipants: checked ? homeMembers.map(m => m.user_id) : []
+              }));
+            }}
+          />
+          <Label htmlFor="split-all" className="ml-2">Split with All Members</Label>
+        </div>
       </div>
       <div className="space-y-3">
         <div className="block sm:hidden">

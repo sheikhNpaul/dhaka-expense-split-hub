@@ -53,7 +53,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showEditEmojiPicker, setShowEditEmojiPicker] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<Record<string, unknown> | null>(null);
   const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -138,19 +138,38 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
     }
   };
 
-  // Simple file upload function - converts to base64 for immediate functionality
+  // Enhanced file upload function with better mobile support
   const uploadFile = async (file: File): Promise<string | null> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
+      
       reader.onload = () => {
-        const base64 = reader.result as string;
-        resolve(base64);
+        try {
+          const base64 = reader.result as string;
+          console.log('File uploaded successfully:', file.name, 'Size:', file.size, 'Type:', file.type);
+          resolve(base64);
+        } catch (error) {
+          console.error('Error processing uploaded file:', error);
+          resolve(null);
+        }
       };
-      reader.onerror = () => {
-        console.error('Error reading file');
+      
+      reader.onerror = (error) => {
+        console.error('Error reading file:', error);
         resolve(null);
       };
-      reader.readAsDataURL(file);
+      
+      reader.onabort = () => {
+        console.error('File reading was aborted');
+        resolve(null);
+      };
+      
+      try {
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Error starting file read:', error);
+        resolve(null);
+      }
     });
   };
 
@@ -161,17 +180,20 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
     let file_url = null;
     
     if (file) {
+      console.log('Starting file upload:', file.name, 'Size:', file.size, 'Type:', file.type);
       setUploading(true);
       try {
         // Convert file to base64 for immediate functionality
         const base64Data = await uploadFile(file);
         if (base64Data) {
           file_url = base64Data;
+          console.log('File uploaded successfully, base64 length:', base64Data.length);
           toast({
             title: "File attached",
             description: `${file.name} attached successfully!`,
           });
         } else {
+          console.error('File upload returned null');
           toast({
             title: "File upload failed",
             description: "Could not process file. Message sent without attachment.",
@@ -204,6 +226,12 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
         avatar_url: userProfile?.avatar_url || user.user_metadata?.avatar_url || '' 
       },
     };
+    
+    console.log('Optimistic message created:', {
+      hasFile: !!file_url,
+      fileUrlLength: file_url?.length || 0,
+      content: newMessage
+    });
     
     setMessages(prev => [...prev, optimisticMsg]);
     setNewMessage('');
@@ -276,12 +304,12 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
     }
   };
 
-  const onEmojiClick = (emojiObject: any) => {
+  const onEmojiClick = (emojiObject: { emoji: string }) => {
     setNewMessage(prev => prev + emojiObject.emoji);
     setShowEmojiPicker(false);
   };
 
-  const onEditEmojiClick = (emojiObject: any) => {
+  const onEditEmojiClick = (emojiObject: { emoji: string }) => {
     setEditContent(prev => prev + emojiObject.emoji);
     setShowEditEmojiPicker(false);
   };
@@ -401,7 +429,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                       </span>
                       <Avatar className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 ring-2 ring-blue-200/50 dark:ring-blue-800/30 transition-all duration-300 hover:ring-blue-400/50 hover:scale-110 shadow-lg">
                         <AvatarImage 
-                          src={userProfile?.avatar_url} 
+                          src={userProfile?.avatar_url as string | undefined} 
                           alt="Your avatar"
                           onError={(e) => {
                             // Hide the image on error to show fallback
@@ -409,7 +437,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                           }}
                         />
                         <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white font-semibold text-xs">
-                          {userProfile?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'Y'}
+                          {(userProfile?.name as string)?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'Y'}
                         </AvatarFallback>
                       </Avatar>
                     </div>
@@ -568,17 +596,31 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                                 src={msg.file_url} 
                                 alt="attachment" 
                                 className="rounded-xl max-w-[240px] sm:max-w-[280px] max-h-[160px] sm:max-h-[200px] object-cover transition-all duration-300 hover:scale-105 shadow-lg" 
+                                onLoad={() => console.log('Image loaded successfully')}
                                 onError={(e) => {
-                                  // Hide the image on error to show fallback
-                                  e.currentTarget.style.display = 'none';
+                                  console.error('Image failed to load:', msg.file_url);
+                                  // Show fallback instead of hiding
+                                  const parent = e.currentTarget.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = `
+                                      <div class="flex items-center justify-center h-[160px] sm:h-[200px] w-[240px] sm:w-[280px] bg-slate-100 dark:bg-slate-700 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600">
+                                        <div class="text-center">
+                                          <svg class="h-8 w-8 mx-auto text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                          </svg>
+                                          <p class="text-xs text-slate-500 dark:text-slate-400">Image preview unavailable</p>
+                                        </div>
+                                      </div>
+                                    `;
+                                  }
                                 }}
                               />
                               <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/10 transition-all duration-300 rounded-xl"></div>
                             </div>
                           )}
                           {msg.file_url && !isImage && (
-                            <div className="mt-3 flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/30">
-                              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                            <div className="mt-3 flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/30 max-w-full overflow-hidden">
+                              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm flex-shrink-0">
                                 {msg.file_url.startsWith('data:image/') ? (
                                   <svg className="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -599,25 +641,35 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                                   <Paperclip className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                                 )}
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
+                              <div className="flex-1 min-w-0 overflow-hidden">
+                                <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm truncate">
                                   Attached File
                                 </div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400">
-                                  Click to view or download
+                                <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                  Tap to download
                                 </div>
                               </div>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  // Create a download link for base64 files
-                                  const link = document.createElement('a');
-                                  link.href = msg.file_url;
-                                  link.download = 'attachment';
-                                  link.click();
+                                  try {
+                                    // Create a download link for base64 files
+                                    const link = document.createElement('a');
+                                    link.href = msg.file_url;
+                                    link.download = 'attachment';
+                                    link.target = '_blank';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    console.log('Download initiated for file');
+                                  } catch (error) {
+                                    console.error('Download failed:', error);
+                                    // Fallback: open in new tab
+                                    window.open(msg.file_url, '_blank');
+                                  }
                                 }}
-                                className="h-7 sm:h-8 px-2 sm:px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 text-xs"
+                                className="h-7 sm:h-8 px-2 sm:px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 text-xs flex-shrink-0"
                               >
                                 Download
                               </Button>
@@ -932,4 +984,4 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
       </div>
     </div>
   );
-}; 
+};
