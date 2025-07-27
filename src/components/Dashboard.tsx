@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +32,7 @@ export const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
   const [currentHomeId, setCurrentHomeId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -44,11 +44,24 @@ export const Dashboard = () => {
 
   const currentTab = searchParams.get('tab') || 'expenses';
 
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    if (data) {
+      setProfile(data);
+      setCurrentHomeId(data.current_home_id);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchProfile();
     }
-  }, [user]);
+  }, [user, fetchProfile]);
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -64,21 +77,6 @@ export const Dashboard = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (data) {
-      setProfile(data);
-      setCurrentHomeId(data.current_home_id);
-    }
-  };
 
   const handleExpenseAdded = () => {
     setShowAddExpense(false);
@@ -255,7 +253,11 @@ export const Dashboard = () => {
         );
 
       case 'messages':
-        return <Messages currentHomeId={currentHomeId || ''} />;
+        return (
+          <div className="space-y-6 sm:space-y-8">
+            <Messages currentHomeId={currentHomeId || ''} />
+          </div>
+        );
 
       default:
         return (

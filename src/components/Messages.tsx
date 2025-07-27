@@ -53,7 +53,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showEditEmojiPicker, setShowEditEmojiPicker] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<Record<string, unknown> | null>(null);
   const [longPressMessageId, setLongPressMessageId] = useState<string | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -304,12 +304,12 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
     }
   };
 
-  const onEmojiClick = (emojiObject: any) => {
+  const onEmojiClick = (emojiObject: { emoji: string }) => {
     setNewMessage(prev => prev + emojiObject.emoji);
     setShowEmojiPicker(false);
   };
 
-  const onEditEmojiClick = (emojiObject: any) => {
+  const onEditEmojiClick = (emojiObject: { emoji: string }) => {
     setEditContent(prev => prev + emojiObject.emoji);
     setShowEditEmojiPicker(false);
   };
@@ -429,7 +429,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                       </span>
                       <Avatar className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0 ring-2 ring-blue-200/50 dark:ring-blue-800/30 transition-all duration-300 hover:ring-blue-400/50 hover:scale-110 shadow-lg">
                         <AvatarImage 
-                          src={userProfile?.avatar_url} 
+                          src={userProfile?.avatar_url as string | undefined} 
                           alt="Your avatar"
                           onError={(e) => {
                             // Hide the image on error to show fallback
@@ -437,7 +437,7 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
                           }}
                         />
                         <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white font-semibold text-xs">
-                          {userProfile?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'Y'}
+                          {(userProfile?.name as string)?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'Y'}
                         </AvatarFallback>
                       </Avatar>
                     </div>
@@ -984,4 +984,4 @@ export const Messages = ({ currentHomeId }: MessagesProps) => {
       </div>
     </div>
   );
-}; 
+};
