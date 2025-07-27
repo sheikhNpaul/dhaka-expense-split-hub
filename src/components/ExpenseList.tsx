@@ -66,6 +66,19 @@ interface ExpenseListProps {
   onMonthChange: (date: Date) => void;
 }
 
+// Add AlertDialog components
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 const ICON_OPTIONS = [
   { name: 'Food', value: 'Fastfood', icon: FastfoodIcon },
   { name: 'Dining', value: 'LocalDining', icon: LocalDiningIcon },
@@ -176,6 +189,25 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
         return acc;
       }, {} as Record<string, Category>);
       setCategories(categoryMap);
+    }
+  };
+
+  const handleDeleteExpense = async (expenseId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('id', expenseId)
+        .eq('payer_id', user.id); // Ensure only the creator can delete
+
+      if (error) throw error;
+      
+      // Refresh the expenses list
+      fetchExpenses();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
     }
   };
 
@@ -352,15 +384,50 @@ export const ExpenseList = ({ refreshTrigger, onEditExpense, onViewComments, cur
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-2">
                   {expense.payer_id === user?.id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEditExpense(expense)}
-                      className="flex items-center justify-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors h-10 sm:h-9"
-                    >
-                      <Edit className="h-3 w-3" />
-                      Edit
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onEditExpense(expense)}
+                        className="flex items-center justify-center gap-1 hover:bg-primary hover:text-primary-foreground transition-colors h-10 sm:h-9"
+                      >
+                        <Edit className="h-3 w-3" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center justify-center gap-1 hover:bg-destructive hover:text-destructive-foreground transition-colors h-10 sm:h-9"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2">
+                              <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                              <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+                            </svg>
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the expense
+                              "{expense.title}" and remove it from our servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteExpense(expense.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </>
                   )}
                   <Button
                     variant="outline"
