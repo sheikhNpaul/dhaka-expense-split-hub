@@ -1,3 +1,3 @@
 Need to install the following packages:
-supabase@2.30.4
+supabase@2.31.8
 Ok to proceed? (y) 
