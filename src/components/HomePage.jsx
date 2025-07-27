@@ -235,7 +235,7 @@ const HomePage = () => {
                                 onClick={() => navigate('/register')}
                                 sx={{ mr: 2 }}
                             >
-                                Get Started Free
+                                Get Started Free haha
                             </Button>
                             <Button
                                 variant="outlined"
